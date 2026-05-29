@@ -311,7 +311,7 @@ const INDICATOR_FILES = [
   { file: '09_08_01_06_tfc.xlsx', label: 'Cobertura de telefonía fija o celular',                                  dir: 'asc'  },
   { file: '10_02_01_01_dce.xlsx', label: 'Desigualdad en el consumo de electricidad entre hogares',                dir: 'desc' },
   { file: '10_02_01_02_esp.xlsx', label: 'Población que no habla español',                                        dir: 'desc' },
-  { file: '10_02_01_03_pel.xlsx', label: 'Brecha de pobreza multidimensional en personas autoidentificadas como indígenas',                         dir: 'asc'  },
+  { file: '10_02_01_03_pel.xlsx', label: 'Paridad de pobreza multidimensional según condición étnica-lingüística',                         dir: 'asc'  },
   { file: '10_02_01_06_epd.xlsx', label: 'Brecha educativa para personas con discapacidad',                        dir: 'asc'  },
   { file: '10_02_01_07_mre.xlsx', label: 'Brecha de pobreza migrantes/no-migrantes',                              dir: 'asc'  },
   { file: '10_02_01_08_tpm.xlsx', label: 'Brecha de pobreza multidimensional entre hogares con jefe adulto mayor y sin jefe adulto mayor',                        dir: 'asc'  },
