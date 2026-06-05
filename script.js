@@ -6,93 +6,102 @@
  */
 'use strict';
 
+/* ══════ CARTOGRAM STATE ══════ */
+let cartogramSvg = null;
+let cartogramProjection = null;
+let cartogramInitialized = false;
+let sliderPeriod = 'v2';  // 'v1' or 'v2'
+
+
 /* ══════ UMBRALES CENTRALIZADOS ══════ */
 const ALL_THRESHOLDS = {
-  '01_02_02_01_mpi': { meta:{max:0.391,min:0.015}, proximo:{max:0.015,min:0.13}, retos:{max:0.13,min:0.23}, grandes:{max:0.23,min:250} },
-  '01_04_01_02_eep': { meta:{max:0,min:15}, proximo:{max:15,min:32.5}, retos:{max:32.5,min:50}, grandes:{max:50,min:1000} },
-  '01_04_01_03_nbi': { meta:{max:0,min:15}, proximo:{max:15,min:32.5}, retos:{max:32.5,min:50}, grandes:{max:50,min:1000} },
-  '01_04_02_05_ssb': { meta:{max:1000,min:85}, proximo:{max:85,min:68}, retos:{max:68,min:50}, grandes:{max:50,min:0} },
-  '02_02_02_01_smu': { meta:{max:0,min:10}, proximo:{max:10,min:17.5}, retos:{max:17.5,min:25}, grandes:{max:25,min:1000} },
-  '02_02_02_02_dcn': { meta:{max:0,min:7.5}, proximo:{max:7.5,min:11.3}, retos:{max:11.3,min:15}, grandes:{max:15,min:1000} },
-  '02_02_02_03_osn': { meta:{max:0,min:6.2}, proximo:{max:6.2,min:7.9}, retos:{max:7.9,min:9.5}, grandes:{max:9.5,min:1000} },
-  '02_02_03_04_pam': { meta:{max:0,min:5}, proximo:{max:5,min:20}, retos:{max:20,min:40}, grandes:{max:40,min:1000} },
-  '02_03_01_05_pac': { meta:{max:100000,min:2.5}, proximo:{max:2.5,min:1.7}, retos:{max:1.7,min:1.5}, grandes:{max:1.5,min:0} },
-  '02_05_01_08_idp': { meta:{max:250,min:0.65}, proximo:{max:0.65,min:0.4}, retos:{max:0.4,min:0.2}, grandes:{max:0.2,min:0} },
-  '03_01_02_02_cpp': { meta:{max:1000,min:85}, proximo:{max:85,min:67.5}, retos:{max:67.5,min:50}, grandes:{max:50,min:0} },
-  '03_02_01_03_tmi': { meta:{max:0,min:12}, proximo:{max:12,min:16}, retos:{max:16,min:20}, grandes:{max:20,min:50000} },
-  '03_02_01_04_tmn': { meta:{max:0,min:25}, proximo:{max:25,min:37.5}, retos:{max:37.5,min:50}, grandes:{max:50,min:50000} },
-  '03_03_01_05_vih': { meta:{max:0,min:0}, proximo:{max:0,min:353.65}, retos:{max:353.65,min:707.3}, grandes:{max:707.3,min:50000} },
-  '03_03_02_06_tub': { meta:{max:0,min:16.7}, proximo:{max:16.7,min:36.7}, retos:{max:36.7,min:56.8}, grandes:{max:56.8,min:50000} },
-  '03_03_03_07_mal': { meta:{max:0,min:1}, proximo:{max:1,min:10}, retos:{max:10,min:50}, grandes:{max:50,min:50000} },
-  '03_03_05_08_tic': { meta:{max:0,min:0}, proximo:{max:0,min:0.7}, retos:{max:0.7,min:1.9}, grandes:{max:1.9,min:50000} },
-  '03_03_05_09_tid': { meta:{max:0,min:0}, proximo:{max:0,min:2}, retos:{max:2,min:4}, grandes:{max:4,min:50000} },
-  '03_07_02_11_tfa': { meta:{max:0,min:25}, proximo:{max:25,min:37.5}, retos:{max:37.5,min:50}, grandes:{max:50,min:50000} },
+  '01_02_02_01_mpi': { meta:{max:0.391,min:0.015}, proximo:{max:0.015,min:0.13}, retos:{max:0.13,min:0.23}, grandes:{max:0.23,min:1} },
+  '01_04_01_02_eep': { meta:{max:0,min:15}, proximo:{max:15,min:32.5}, retos:{max:32.5,min:50}, grandes:{max:50,min:100} },
+  '01_04_01_03_nbi': { meta:{max:0,min:15}, proximo:{max:15,min:32.5}, retos:{max:32.5,min:50}, grandes:{max:50,min:100} },
+  '01_04_02_05_ssb': { meta:{max:100,min:85}, proximo:{max:85,min:68}, retos:{max:68,min:50}, grandes:{max:50,min:0} },
+  '02_02_02_01_smu': { meta:{max:0,min:10}, proximo:{max:10,min:17.5}, retos:{max:17.5,min:25}, grandes:{max:25,min:100} },
+  '02_02_02_02_dcn': { meta:{max:0,min:7.5}, proximo:{max:7.5,min:11.3}, retos:{max:11.3,min:15}, grandes:{max:15,min:100} },
+  '02_02_02_03_osn': { meta:{max:0,min:6.2}, proximo:{max:6.2,min:7.9}, retos:{max:7.9,min:9.5}, grandes:{max:9.5,min:100} },
+  '02_02_03_04_pam': { meta:{max:0,min:5}, proximo:{max:5,min:20}, retos:{max:20,min:40}, grandes:{max:40,min:100} },
+  '02_03_01_05_pac': { meta:{max:999,min:10}, proximo:{max:10,min:2}, retos:{max:2,min:0}, grandes:{max:0,min:0} },
+  '02_03_01_06_rpa': { meta:{max:999,min:2.5}, proximo:{max:2.5,min:1.7}, retos:{max:1.7,min:1.5}, grandes:{max:1.5,min:0} },
+  '02_05_01_08_idp': { meta:{max:1,min:0.65}, proximo:{max:0.65,min:0.4}, retos:{max:0.4,min:0.2}, grandes:{max:0.2,min:0} },
+  '03_01_02_02_cpp': { meta:{max:100,min:85}, proximo:{max:85,min:67.5}, retos:{max:67.5,min:50}, grandes:{max:50,min:0} },
+  '03_02_01_03_tmi': { meta:{max:0,min:12}, proximo:{max:12,min:16}, retos:{max:16,min:20}, grandes:{max:20,min:115} },
+  '03_02_01_04_tmn': { meta:{max:0,min:25}, proximo:{max:25,min:37.5}, retos:{max:37.5,min:50}, grandes:{max:50,min:283} },
+  '03_03_01_05_vih': { meta:{max:0,min:15.527}, proximo:{max:15.527,min:77.636}, retos:{max:77.636,min:155.272}, grandes:{max:155.272,min:11516.4} },
+  '03_03_02_06_tub': { meta:{max:0,min:10}, proximo:{max:10,min:42.5}, retos:{max:42.5,min:75}, grandes:{max:75,min:433.4} },
+  '03_03_03_05_vec': { meta:{max:0,min:0}, proximo:{max:0,min:0.1}, retos:{max:0.1,min:0.3}, grandes:{max:0.3,min:0.67} },
+  '03_07_02_11_tfa': { meta:{max:0,min:0.1}, proximo:{max:0.1,min:0.25}, retos:{max:0.25,min:0.5}, grandes:{max:0.5,min:1.17} },
   '04_01_02_01_ash': { meta:{max:0,min:3}, proximo:{max:3,min:4.5}, retos:{max:4.5,min:6}, grandes:{max:6,min:100} },
   '04_01_02_02_asm': { meta:{max:0,min:3}, proximo:{max:3,min:4.5}, retos:{max:4.5,min:6}, grandes:{max:6,min:100} },
-  '04_02_02_03_pfp': { meta:{max:100,min:90}, proximo:{max:90,min:80}, retos:{max:80,min:70}, grandes:{max:70,min:0} },
-  '04_03_04_04_pes': { meta:{max:100,min:20}, proximo:{max:20,min:15}, retos:{max:15,min:10}, grandes:{max:10,min:0} },
+  '04_02_02_03_tam': { meta:{max:100,min:90}, proximo:{max:90,min:80}, retos:{max:80,min:70}, grandes:{max:70,min:16.7} },
+  '04_02_02_04_tah': { meta:{max:100,min:90}, proximo:{max:90,min:80}, retos:{max:80,min:70}, grandes:{max:70,min:18} },
+  '04_03_02_01_aeh': { meta:{max:20,min:12}, proximo:{max:12,min:9}, retos:{max:9,min:6}, grandes:{max:6,min:0} },
+  '04_03_02_01_aem': { meta:{max:20,min:12}, proximo:{max:12,min:9}, retos:{max:9,min:6}, grandes:{max:6,min:0} },
+  '04_03_04_04_esh': { meta:{max:100,min:20}, proximo:{max:20,min:15}, retos:{max:15,min:10}, grandes:{max:10,min:0} },
+  '04_03_04_05_esm': { meta:{max:100,min:20}, proximo:{max:20,min:15}, retos:{max:15,min:10}, grandes:{max:10,min:0} },
   '04_06_01_06_alf': { meta:{max:100,min:95}, proximo:{max:95,min:90}, retos:{max:90,min:85}, grandes:{max:85,min:0} },
   '04_10_01_07_pci': { meta:{max:100,min:96.9}, proximo:{max:96.9,min:69.6}, retos:{max:69.6,min:42.3}, grandes:{max:42.3,min:0} },
   '04_10_01_09_pcs': { meta:{max:100,min:96.9}, proximo:{max:96.9,min:69.6}, retos:{max:69.6,min:42.3}, grandes:{max:42.3,min:0} },
-  '05_01_01_01_pga': { meta:{max:500,min:1}, proximo:{max:1,min:0.865}, retos:{max:0.865,min:0.73}, grandes:{max:0.73,min:0} },
-  '05_01_01_02_pgm': { meta:{max:500,min:0.95}, proximo:{max:0.95,min:0.85}, retos:{max:0.85,min:0.65}, grandes:{max:0.65,min:0} },
-  '05_01_01_03_pge': { meta:{max:500,min:1}, proximo:{max:1,min:0.85}, retos:{max:0.85,min:0.7}, grandes:{max:0.7,min:0} },
-  '05_01_01_04_pgp': { meta:{max:500,min:0.8}, proximo:{max:0.8,min:0.7}, retos:{max:0.7,min:0.5}, grandes:{max:0.5,min:0} },
+  '05_01_01_01_pga': { meta:{max:1,min:1}, proximo:{max:1,min:0.865}, retos:{max:0.865,min:0.73}, grandes:{max:0.73,min:0} },
+  '05_01_01_02_pgm': { meta:{max:999,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
+  '05_01_01_03_pge': { meta:{max:2,min:1}, proximo:{max:1,min:0.85}, retos:{max:0.85,min:0.7}, grandes:{max:0.7,min:0} },
+  '05_01_01_04_pgp': { meta:{max:1,min:0.8}, proximo:{max:0.8,min:0.7}, retos:{max:0.7,min:0.5}, grandes:{max:0.5,min:0} },
+  '05_04_01_01_phc': { meta:{max:4,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
   '05_05_01_05_acm': { meta:{max:100,min:40}, proximo:{max:40,min:30}, retos:{max:30,min:20}, grandes:{max:20,min:0} },
   '05_07_02_06_ttm': { meta:{max:1,min:0.5}, proximo:{max:0.5,min:0.25}, retos:{max:0.25,min:0.05}, grandes:{max:0.05,min:0} },
-  '06_01_01_01_cap': { meta:{max:1000,min:98}, proximo:{max:98,min:89}, retos:{max:89,min:80}, grandes:{max:80,min:0} },
-  '06_02_01_02_cas': { meta:{max:1000,min:95}, proximo:{max:95,min:85}, retos:{max:85,min:75}, grandes:{max:75,min:0} },
-  '06_03_01_03_tar': { meta:{max:1000,min:50}, proximo:{max:50,min:32.5}, retos:{max:32.5,min:15}, grandes:{max:15,min:0} },
-  '07_01_01_01_cep': { meta:{max:1000,min:171}, proximo:{max:171,min:111}, retos:{max:111,min:52}, grandes:{max:52,min:0} },
-  '07_01_01_02_cae': { meta:{max:1000,min:98}, proximo:{max:98,min:89}, retos:{max:89,min:80}, grandes:{max:80,min:0} },
-  '07_01_02_03_elc': { meta:{max:1000,min:85}, proximo:{max:85,min:67.5}, retos:{max:67.5,min:50}, grandes:{max:50,min:0} },
-  '07_02_01_04_ecp': { meta:{max:0,min:2}, proximo:{max:2,min:3}, retos:{max:3,min:4}, grandes:{max:4,min:1000} },
-  '08_04_02_01_mcc': { meta:{max:0,min:4.6}, proximo:{max:4.6,min:13.6}, retos:{max:13.6,min:22.6}, grandes:{max:22.6,min:1000} },
-  '08_05_02_02_tgh': { meta:{max:10000,min:85.8}, proximo:{max:85.8,min:80.2}, retos:{max:80.2,min:74.5}, grandes:{max:74.5,min:0} },
-  '08_05_02_03_tgm': { meta:{max:10000,min:66.5}, proximo:{max:66.5,min:55.1}, retos:{max:55.1,min:43.7}, grandes:{max:43.7,min:0} },
-  '08_06_01_04_eth': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:2000} },
-  '08_06_01_05_etm': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:2000} },
-  '08_06_01_06_tch': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:100} },
-  '08_06_01_07_tcm': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:100} },
-  '08_09_02_01_pot':       { meta:{max:2000,min:15}, proximo:{max:15,min:10}, retos:{max:10,min:5}, grandes:{max:5,min:0} },
-  '08_09_02_01_pot_ARLAT': { meta:{max:2000,min:10}, proximo:{max:10,min:5}, retos:{max:5,min:2.5}, grandes:{max:2.5,min:0} },
-  '08_09_02_01_pot_INE':   { meta:{max:2000,min:10}, proximo:{max:10,min:5}, retos:{max:5,min:2.5}, grandes:{max:2.5,min:0} },
-  '08_09_02_02_pbt': { meta:{max:2000,min:4.68}, proximo:{max:4.68,min:2.4}, retos:{max:2.4,min:0.11}, grandes:{max:0.11,min:0} },
-  '08_10_02_07_dsb': { meta:{max:2000,min:17.8}, proximo:{max:17.8,min:9.5}, retos:{max:9.5,min:1.2}, grandes:{max:1.2,min:0} },
-  '09_01_01_01_vpc': { meta:{max:2000,min:2}, proximo:{max:2,min:1}, retos:{max:1,min:0.01}, grandes:{max:0,min:0} },
-  '09_08_01_01_ci': { meta:{max:2000,min:65}, proximo:{max:65,min:42.5}, retos:{max:42.5,min:20}, grandes:{max:20,min:0} },
-  '09_08_01_05_drb': { meta:{max:2000,min:2.41}, proximo:{max:2.41,min:0.58}, retos:{max:0.58,min:0.02}, grandes:{max:0.02,min:0} },
-  '09_08_01_06_tfc': { meta:{max:2000,min:75}, proximo:{max:75,min:57.5}, retos:{max:57.5,min:40}, grandes:{max:40,min:0} },
-  '10_02_01_01_dce': { meta:{max:0,min:0.43}, proximo:{max:0.43,min:0.53}, retos:{max:0.53,min:0.62}, grandes:{max:0.62,min:10000} },
-  '10_02_01_02_esp': { meta:{max:0,min:1.2}, proximo:{max:1.2,min:15.1}, retos:{max:15.1,min:29}, grandes:{max:29,min:10000} },
+  '06_01_01_01_cap': { meta:{max:100,min:98}, proximo:{max:98,min:89}, retos:{max:89,min:80}, grandes:{max:80,min:0} },
+  '06_02_01_02_cas': { meta:{max:100,min:95}, proximo:{max:95,min:85}, retos:{max:85,min:75}, grandes:{max:75,min:0} },
+  '06_03_01_03_tar': { meta:{max:100,min:50}, proximo:{max:50,min:32.5}, retos:{max:32.5,min:15}, grandes:{max:15,min:0} },
+  '07_01_01_01_cep': { meta:{max:631.4,min:171.0748}, proximo:{max:171.0748,min:111.41842}, retos:{max:111.41842,min:52}, grandes:{max:52,min:0} },
+  '07_01_01_02_cae': { meta:{max:100,min:98}, proximo:{max:98,min:89}, retos:{max:89,min:80}, grandes:{max:80,min:0} },
+  '07_01_01_04_mcc': { meta:{max:0,min:4.6}, proximo:{max:4.6,min:13.6}, retos:{max:13.6,min:22.6}, grandes:{max:22.6,min:100} },
+  '07_01_02_03_elc': { meta:{max:100,min:85}, proximo:{max:85,min:67.5}, retos:{max:67.5,min:50}, grandes:{max:50,min:0} },
+  '08_05_02_02_tgh': { meta:{max:100,min:85.8}, proximo:{max:85.8,min:80.2}, retos:{max:80.2,min:74.5}, grandes:{max:74.5,min:0} },
+  '08_05_02_03_tgm': { meta:{max:100,min:66.5}, proximo:{max:66.5,min:55.1}, retos:{max:55.1,min:43.7}, grandes:{max:43.7,min:0} },
+  '08_06_01_04_eth': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:100} },
+  '08_06_01_05_etm': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:100} },
+  '08_09_02_01_pot': { meta:{max:10,min:10}, proximo:{max:10,min:5}, retos:{max:5,min:2.5}, grandes:{max:2.5,min:0} },
+  '08_09_02_02_pbt': { meta:{max:100,min:4.68}, proximo:{max:4.68,min:2.4}, retos:{max:2.4,min:0.11}, grandes:{max:0.11,min:0} },
+  '08_10_02_07_dsb': { meta:{max:225,min:17.8}, proximo:{max:17.8,min:9.5}, retos:{max:9.5,min:1.2}, grandes:{max:1.2,min:0} },
+  '09_01_01_01_vpc': { meta:{max:5,min:2}, proximo:{max:2,min:1}, retos:{max:1,min:0.01}, grandes:{max:0,min:0} },
+  '09_08_01_01_ci': { meta:{max:100,min:65}, proximo:{max:65,min:42.5}, retos:{max:42.5,min:20}, grandes:{max:20,min:0} },
+  '09_08_01_05_drb': { meta:{max:3,min:2.41}, proximo:{max:2.41,min:0.58}, retos:{max:0.58,min:0.02}, grandes:{max:0.02,min:0} },
+  '09_08_01_06_tfc': { meta:{max:100,min:75}, proximo:{max:75,min:57.5}, retos:{max:57.5,min:40}, grandes:{max:40,min:0} },
+  '10_02_01_02_esp': { meta:{max:0,min:1.2}, proximo:{max:1.2,min:15.1}, retos:{max:15.1,min:29}, grandes:{max:29,min:100} },
   '10_02_01_03_pel': { meta:{max:999,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
-  '10_02_01_06_epd': { meta:{max:999,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
   '10_02_01_07_mre': { meta:{max:999,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
   '10_02_01_08_tpm': { meta:{max:999,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
+  '10_02_01_09_gip': { meta:{max:0,min:0.5}, proximo:{max:0.5,min:0.75}, retos:{max:0.75,min:1}, grandes:{max:1,min:999} },
   '10_04_02_04_gin': { meta:{max:0,min:0.31}, proximo:{max:0.31,min:0.4}, retos:{max:0.4,min:0.48}, grandes:{max:0.48,min:1} },
   '11_01_01_01_thm': { meta:{max:0,min:15}, proximo:{max:15,min:22.5}, retos:{max:22.5,min:30}, grandes:{max:30,min:100} },
   '11_01_01_02_ssb': { meta:{max:0,min:15}, proximo:{max:15,min:32.5}, retos:{max:32.5,min:50}, grandes:{max:50,min:100} },
-  '11_01_01_03_ava': { meta:{max:100,min:49}, proximo:{max:49,min:31}, retos:{max:31,min:12}, grandes:{max:12,min:0} },
-  '11_02_01_04_atc': { meta:{max:50000,min:93}, proximo:{max:93,min:49}, retos:{max:49,min:5}, grandes:{max:5,min:0} },
+  '11_01_01_03_ava': { meta:{max:100,min:85}, proximo:{max:85,min:75}, retos:{max:75,min:50}, grandes:{max:50,min:0} },
+  '11_02_01_04_atc': { meta:{max:5366.29,min:93}, proximo:{max:93,min:49}, retos:{max:49,min:5}, grandes:{max:5,min:0} },
+  '11_06_01_01_ipr': { meta:{max:999,min:100}, proximo:{max:100,min:50}, retos:{max:50,min:25}, grandes:{max:25,min:0} },
+  '11_06_01_02_srr': { meta:{max:100,min:90}, proximo:{max:90,min:50}, retos:{max:50,min:10}, grandes:{max:10,min:0} },
   '11_06_02_05_ica': { meta:{max:0,min:10}, proximo:{max:10,min:15}, retos:{max:15,min:25}, grandes:{max:25,min:31} },
-  '12_04_01_01_ipr': { meta:{max:10000,min:100}, proximo:{max:100,min:50}, retos:{max:50,min:25}, grandes:{max:25,min:0} },
-  '12_04_02_02_srr': { meta:{max:10000,min:90}, proximo:{max:90,min:50}, retos:{max:50,min:10}, grandes:{max:10,min:0} },
-  '13_01_01_03_fec': { meta:{max:0,min:5}, proximo:{max:5,min:15}, retos:{max:15,min:30}, grandes:{max:30,min:50000} },
-  '13_01_03_01_icc': { meta:{max:0,min:0.9}, proximo:{max:1,min:1.9}, retos:{max:2,min:2.1}, grandes:{max:2.2,min:20000} },
-  '13_02_02_02_epb': { meta:{max:0,min:2}, proximo:{max:2,min:3}, retos:{max:3,min:4}, grandes:{max:4,min:5000} },
-  '13_02_02_03_ect': { meta:{max:-50,min:0}, proximo:{max:0,min:0.2}, retos:{max:0.2,min:0.7}, grandes:{max:0.7,min:50000} },
-  '13_02_02_04_eci': { meta:{max:0,min:2}, proximo:{max:2,min:3}, retos:{max:3,min:4}, grandes:{max:4,min:50000} },
+  '13_01_01_03_fec': { meta:{max:0,min:5}, proximo:{max:5,min:15}, retos:{max:15,min:30}, grandes:{max:30,min:444} },
+  '13_01_03_01_icc': { meta:{max:0,min:0.9}, proximo:{max:1,min:1.9}, retos:{max:2,min:2.1}, grandes:{max:2.2,min:3} },
+  '13_02_02_02_epb': { meta:{max:0,min:2}, proximo:{max:2,min:3}, retos:{max:3,min:4}, grandes:{max:4,min:441.4} },
+  '13_02_02_03_ect': { meta:{max:0,min:0}, proximo:{max:0,min:0.2}, retos:{max:0.2,min:0.7}, grandes:{max:0.7,min:99} },
+  '13_02_02_04_eci': { meta:{max:0,min:2}, proximo:{max:2,min:3}, retos:{max:3,min:4}, grandes:{max:4,min:1266.8} },
   '15_01_02_01_sap': { meta:{max:100,min:25}, proximo:{max:25,min:15}, retos:{max:15,min:5}, grandes:{max:5,min:0} },
-  '15_02_01_05_tpb': { meta:{max:-50,min:0}, proximo:{max:0,min:0.7}, retos:{max:0.7,min:2.1}, grandes:{max:2.1,min:100} },
-  '15_05_02_02_pbd': { meta:{max:0,min:0.06}, proximo:{max:0.06,min:0.17}, retos:{max:0.17,min:0.3}, grandes:{max:0.3,min:5000} },
-  '15_05_02_03_pbi': { meta:{max:0,min:0.15}, proximo:{max:0.15,min:0.8}, retos:{max:0.8,min:1.4}, grandes:{max:1.4,min:5000} },
-  '16_01_01_01_thp': { meta:{max:0,min:1.31}, proximo:{max:1.31,min:2.35}, retos:{max:2.35,min:3.39}, grandes:{max:3.39,min:5555} },
-  '16_06_01_02_cep': { meta:{max:10000,min:83.4}, proximo:{max:83.4,min:71.7}, retos:{max:71.7,min:60}, grandes:{max:60,min:0} },
-  '16_07_02_03_tcs': { meta:{max:-15,min:0}, proximo:{max:0,min:5}, retos:{max:5,min:10}, grandes:{max:10,min:100} },
+  '15_02_01_05_tpb': { meta:{max:0,min:0}, proximo:{max:0,min:0.7}, retos:{max:0.7,min:2.1}, grandes:{max:2.1,min:100} },
+  '15_05_02_02_pbd': { meta:{max:0,min:0.06}, proximo:{max:0.06,min:0.17}, retos:{max:0.17,min:0.3}, grandes:{max:0.3,min:4.32} },
+  '15_05_02_03_pbi': { meta:{max:0,min:0.15}, proximo:{max:0.15,min:0.8}, retos:{max:0.8,min:1.4}, grandes:{max:1.4,min:62} },
+  '16_01_01_01_thp': { meta:{max:0,min:1.31}, proximo:{max:1.31,min:2.35}, retos:{max:2.35,min:3.39}, grandes:{max:3.39,min:26.72} },
+  '16_06_01_02_cep': { meta:{max:95,min:83.4}, proximo:{max:83.4,min:71.7}, retos:{max:71.7,min:60}, grandes:{max:60,min:0} },
+  '16_07_02_03_tcs': { meta:{max:0,min:0}, proximo:{max:0,min:5}, retos:{max:5,min:10}, grandes:{max:10,min:1000} },
+  '16_09_01_04_nic': { meta:{max:100,min:95}, proximo:{max:95,min:90}, retos:{max:90,min:85}, grandes:{max:85,min:0} },
+  '17_01_02_01_iil': { meta:{max:100,min:15}, proximo:{max:15,min:10}, retos:{max:10,min:5}, grandes:{max:5,min:0} },
+  '17_18_01_02_ipc': { meta:{max:3753.42862,min:463.08671}, proximo:{max:463.08671,min:252.87894}, retos:{max:252.87894,min:42.67117}, grandes:{max:42.67117,min:0} },
+  '08_09_02_01_pot_INE':   { meta:{max:2000,min:10}, proximo:{max:10,min:5}, retos:{max:5,min:2.5}, grandes:{max:2.5,min:0} },
+  '08_09_02_01_pot_ARLAT': { meta:{max:2000,min:10}, proximo:{max:10,min:5}, retos:{max:5,min:2.5}, grandes:{max:2.5,min:0} },
   '16_07_02_03_tcs_1': { meta:{max:0,min:1}, proximo:{max:1,min:2}, retos:{max:2,min:3}, grandes:{max:3,min:1000} },
-  '16_09_01_04_nic': { meta:{max:1000,min:95}, proximo:{max:95,min:90}, retos:{max:90,min:85}, grandes:{max:85,min:0} },
-  '17_01_02_01_iil': { meta:{max:1000,min:50}, proximo:{max:50,min:30}, retos:{max:30,min:10}, grandes:{max:10,min:0} },
-  '17_18_01_02_ipc': { meta:{max:900000,min:463}, proximo:{max:463,min:253}, retos:{max:253,min:43}, grandes:{max:43,min:0} },
+  '08_06_01_06_tch': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:100} },
+  '08_06_01_07_tcm': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:100} },
 };
 
 /* ══════════════════════════════════════════════════════
@@ -107,7 +116,7 @@ function isAscending(thresholds) {
 }
 
 const PERIOD_LABELS = {
-  '01_02_02_01_mpi': { v1: 'IPM 2012', v2: 'IPM 2024' },
+  '01_02_02_01_mpi': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '01_04_01_02_eep': { v1: 'Valor 2016', v2: 'Valor 2024' },
   '01_04_01_03_nbi': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '01_04_02_05_ssb': { v1: 'Valor 2012', v2: 'Valor 2024' },
@@ -116,28 +125,32 @@ const PERIOD_LABELS = {
   '02_02_02_03_osn': { v1: 'Valor 2008', v2: 'Valor 2023' },
   '02_02_03_04_pam': { v1: 'Valor 2008', v2: 'Valor 2023' },
   '02_03_01_05_pac': { v1: 'Promedio 2013-2015', v2: 'Promedio 2022-2024' },
+  '02_03_01_06_rpa': { v1: 'Promedio 2013-2015', v2: 'Promedio 2022-2024' },
   '02_05_01_08_idp': { v1: 'Promedio 2013-2015', v2: 'Promedio 2022-2024' },
   '03_01_02_02_cpp': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '03_02_01_03_tmi': { v1: 'Valor 2011', v2: 'Promedio anual 2019-2024' },
   '03_02_01_04_tmn': { v1: 'Valor 2011', v2: 'Promedio anual 2019-2024' },
   '03_03_01_05_vih': { v1: 'Promedio 2011-2013', v2: 'Promedio 2022-2024' },
   '03_03_02_06_tub': { v1: 'Promedio 2011-2013', v2: 'Promedio 2022-2024' },
-  '03_03_03_07_mal': { v1: 'Promedio 2011-2013', v2: 'Promedio 2022-2024' },
-  '03_03_05_08_tic': { v1: 'Promedio 2011-2013', v2: 'Promedio 2022-2024' },
-  '03_03_05_09_tid': { v1: 'Promedio 2011-2013', v2: 'Promedio 2022-2024' },
+  '03_03_03_05_vec': { v1: 'Promedio 2011-2013', v2: 'Promedio 2022-2024' },
   '03_07_02_11_tfa': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '04_01_02_01_ash': { v1: 'Promedio 2012-2014', v2: 'Promedio 2022-2024' },
   '04_01_02_02_asm': { v1: 'Promedio 2012-2014', v2: 'Promedio 2022-2024' },
-  '04_02_02_03_pfp': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '04_03_04_04_pes': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '04_02_02_03_tam': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '04_02_02_04_tah': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '04_03_04_04_esh': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '04_03_04_05_esm': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '04_06_01_06_alf': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '04_03_02_01_aeh': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '04_03_02_01_aem': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '04_10_01_07_pci': { v1: 'Promedio 2012-2014', v2: 'Promedio 2022-2024' },
   '04_10_01_09_pcs': { v1: 'Promedio 2012-2014', v2: 'Promedio 2022-2024' },
   '05_01_01_01_pga': { v1: 'Promedio 2012-2014', v2: 'Promedio 2022-2024' },
   '05_01_01_02_pgm': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '05_01_01_03_pge': { v1: '', v2: '' },
+  '05_01_01_03_pge': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '05_01_01_04_pgp': { v1: 'Valor 2013', v2: 'Valor 2025' },
   '05_05_01_05_acm': { v1: 'Valor 2015', v2: 'Valor 2021' },
+  '05_04_01_01_phc': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '05_07_02_06_ttm': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '06_01_01_01_cap': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '06_02_01_02_cas': { v1: 'Valor 2012', v2: 'Valor 2024' },
@@ -145,53 +158,51 @@ const PERIOD_LABELS = {
   '07_01_01_01_cep': { v1: 'Valor 2016', v2: 'Valor 2024' },
   '07_01_01_02_cae': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '07_01_02_03_elc': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '07_02_01_04_ecp': { v1: 'Valor 2016', v2: 'Valor 2023' },
-  '08_04_02_01_mcc': { v1: '', v2: '' },
+  '07_01_01_04_mcc': { v1: 'Valor 2016', v2: 'Valor 2024' },
   '08_05_02_02_tgh': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '08_05_02_03_tgm': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '08_06_01_04_eth': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '08_06_01_05_etm': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '08_06_01_06_tch': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '08_06_01_07_tcm': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '08_09_02_01_pot': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '08_09_02_01_pot_INE':   { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '08_09_02_01_pot_ARLAT': { v1: '', v2: '' },
-  '08_09_02_02_pbt': { v1: '', v2: '' },
-  '08_10_02_07_dsb': { v1: 'Número de plataformas de atención financiera por cada mil habitantes en 2012', v2: 'Número de plataformas de atención financiera por cada mil habitantes en 2024' },
+  '08_09_02_02_pbt': { v1: 'Valor 2016', v2: 'Valor 2025' },
+  '08_10_02_07_dsb': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '09_01_01_01_vpc': { v1: 'Cantidad 2012', v2: 'Cantidad 2024' },
   '09_08_01_01_ci': { v1: 'Cantidad 2012', v2: 'Cantidad 2024' },
   '09_08_01_05_drb': { v1: 'Cantidad 2012', v2: 'Cantidad 2024' },
   '09_08_01_06_tfc': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '10_02_01_01_dce': { v1: '', v2: '' },
+  '10_02_01_09_gip': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '10_02_01_02_esp': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '10_02_01_03_pel': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '10_02_01_06_epd': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '10_02_01_07_mre': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '10_02_01_08_tpm': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '10_04_02_04_gin': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '11_01_01_01_thm': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '11_01_01_02_ssb': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '11_01_01_03_ava': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '11_02_01_04_atc': { v1: 'Valor de asientos disponibles en vehículos de transporte colectivo en 2012', v2: 'Valor de asientos disponibles en vehículos de transporte colectivo en 2024' },
-  '11_06_02_05_ica': { v1: 'Promedio anual 2010-2012', v2: 'Promedio anual 2021-2023' },
-  '12_04_01_01_ipr': { v1: 'Promedio 2012-2014', v2: 'Promedio 2022-2024' },
-  '12_04_02_02_srr': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '13_01_01_03_fec': { v1: 'Promedio del número de familias afectadas y damnificadas por eventos climáticos entre 2011 y 2013', v2: 'Promedio del número de familias afectadas y damnificadas por eventos climáticos entre 2021 y 2023' },
-  '13_01_03_01_icc': { v1: '', v2: '' },
-  '13_02_02_02_epb': { v1: 'Promedio 2011-2013', v2: 'Promedio (2021-2023)' },
+  '11_02_01_04_atc': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '11_06_02_05_ica': { v1: 'Promedio 2010-2012', v2: 'Promedio 2021-2023' },
+  '11_06_01_01_ipr': { v1: 'Promedio 2012-2014', v2: 'Promedio 2022-2024' },
+  '11_06_01_02_srr': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '13_01_01_03_fec': { v1: 'Promedio 2011-2013', v2: 'Promedio 2021-2023' },
+  '13_01_03_01_icc': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '13_02_02_02_epb': { v1: 'Promedio 2011-2013', v2: 'Promedio 2021-2023' },
   '13_02_02_03_ect': { v1: 'Valor 2015', v2: 'Valor 2024' },
-  '13_02_02_04_eci': { v1: 'Promedio 2011-2013', v2: 'Promedio (2020-2022)' },
-  '15_01_02_01_sap': { v1: 'Superficie total en hectáreas de áreas protegidas en 2012', v2: 'Superficie total en hectáreas de áreas protegidas en 2025' },
+  '13_02_02_04_eci': { v1: 'Promedio 2011-2013', v2: 'Promedio 2020-2022' },
+  '15_01_02_01_sap': { v1: 'Valor 2012', v2: 'Valor 2025' },
   '15_02_01_05_tpb': { v1: 'Promedio 2012-2014', v2: 'Promedio 2022-2024' },
-  '15_05_02_02_pbd': { v1: 'Valor de riqueza de especies perdida en superficies deforestadas en 2012', v2: 'Valor de riqueza de especies perdida en superficies deforestadas en 2024' },
-  '15_05_02_03_pbi': { v1: 'Valor de riqueza de especies perdida en superficies incendiadas en 2012', v2: 'Valor de riqueza de especies perdida en superficies incendiadas en 2024' },
+  '15_05_02_02_pbd': { v1: 'Valor de riqueza de especies en superficies deforestadas en 2012', v2: 'Valor de riqueza de especies en superficies deforestadas en 2024' },
+  '15_05_02_03_pbi': { v1: 'Valor de riqueza de especies en superficies quemadas en 2012', v2: 'Valor de riqueza de especies en superficies quemadas en 2024' },
   '16_01_01_01_thp': { v1: 'Promedio 2017-2019', v2: 'Promedio 2022-2024' },
-  '16_06_01_02_cep': { v1: 'Promedio de porcentaje de presupuesto programado que ha sido ejecutado entre 2011 y 2013', v2: 'Promedio de porcentaje de presupuesto programado que ha sido ejecutado entre 2021 y 2023' },
+  '16_06_01_02_cep': { v1: 'Promedio 2011-2013', v2: 'Promedio 2021-2023' },
   '16_07_02_03_tcs': { v1: 'Promedio 2018-2020', v2: 'Promedio 2022-2024' },
-  '16_07_02_03_tcs_1': { v1: 'Promedio 2018-2020', v2: 'Promedio 2022-2024' },
   '16_09_01_04_nic': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '17_01_02_01_iil': { v1: 'Promedio 2011-2013 (0 para faltantes)', v2: 'Promedio 2021-2023 (valor 2024 para faltantes)' },
+  '17_01_02_01_iil': { v1: 'Promedio 2011-2013', v2: 'Promedio 2021-2023' },
   '17_18_01_02_ipc': { v1: 'Valor 2017', v2: 'Valor 2024' },
+  '08_09_02_01_pot_INE': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '08_09_02_01_pot_ARLAT': { v1: '', v2: '' },
+  '16_07_02_03_tcs_1': { v1: 'Promedio 2018-2020', v2: 'Promedio 2022-2024' },
+  '08_06_01_06_tch': { v1: 'Valor 2012', v2: 'Valor 2024' },
+  '08_06_01_07_tcm': { v1: 'Valor 2012', v2: 'Valor 2024' },
 };
 
 /* ══════ MAPA DE DEPARTAMENTOS POR CÓDIGO ══════ */
@@ -223,6 +234,229 @@ function fmtNum(v) {
 }
 
 /* ══════ NAVIGATION ══════ */
+
+/* ══════ VIEW MODE: dual / cartogram ══════ */
+let currentViewMode = 'dual';
+let mapSlider = null;
+
+function setViewMode(mode) {
+  currentViewMode = mode;
+  document.getElementById('btn-dual-map')?.classList.toggle('active', mode === 'dual');
+  document.getElementById('btn-cartogram')?.classList.toggle('active', mode === 'cartogram');
+  document.getElementById('maps-container')?.classList.toggle('hidden', mode === 'cartogram');
+  document.getElementById('cartogram-layout')?.classList.toggle('hidden', mode !== 'cartogram');
+
+  if (mode === 'cartogram') {
+    // Init slider map if needed
+    if (!mapSlider) {
+      const tileUrl  = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
+      const tileOpts = { attribution: '©OSM ©Carto', subdomains: 'abcd', maxZoom: 19 };
+      const bounds   = L.latLngBounds(BOLIVIA_BOUNDS[0], BOLIVIA_BOUNDS[1]);
+      const el = document.getElementById('map-slider');
+      if (el) {
+        mapSlider = L.map('map-slider', { zoomControl: true, attributionControl: false, maxBounds: bounds.pad(0.3) }).fitBounds(bounds);
+        L.tileLayer(tileUrl, tileOpts).addTo(mapSlider);
+      }
+    }
+    if (state.indicatorData) {
+      renderSliderMap(state.indicatorData, sliderPeriod);
+      renderCartogram(state.indicatorData);
+      // Update slider labels
+      const d = state.indicatorData;
+      document.getElementById('slider-label-v1').textContent = d.colLabels.v1display || d.colLabels.v1;
+      document.getElementById('slider-label-v2').textContent = d.colLabels.v2display || d.colLabels.v2;
+    }
+    setTimeout(() => { if (mapSlider) mapSlider.invalidateSize(); }, 100);
+  }
+}
+
+function renderSliderMap(data, period) {
+  if (!mapSlider || !state.geoMun) return;
+  // Remove old layer
+  if (state.layerSlider) mapSlider.removeLayer(state.layerSlider);
+  const mapData = data.mun;
+  state.layerSlider = L.geoJSON(state.geoMun, {
+    style: f => featureStyle(f, period === 'v1' ? 'left' : 'right', mapData, data.thresholds),
+    onEachFeature: (feature, layer) => {
+      layer.on({
+        mouseover: e => onFeatureHover(e, feature, period === 'v1' ? 'left' : 'right'),
+        mouseout:  () => hideTooltip(),
+        click:     e => onFeatureClick(e, feature)
+      });
+    }
+  }).addTo(mapSlider);
+  try {
+    const b = state.layerSlider.getBounds();
+    if (b.isValid()) mapSlider.fitBounds(b, { padding: [20,20], animate: false });
+  } catch(e) {}
+  // Update period label
+  const label = period === 'v1'
+    ? (data.colLabels.v1display || data.colLabels.v1)
+    : (data.colLabels.v2display || data.colLabels.v2);
+  const el = document.getElementById('slider-period-label');
+  if (el) el.textContent = label;
+  const el2 = document.getElementById('cartogram-period-label');
+  if (el2) el2.textContent = label;
+}
+
+function initSlider() {
+  const slider = document.getElementById('temporal-slider');
+  if (!slider) return;
+  slider.addEventListener('input', function() {
+    sliderPeriod = this.value === '0' ? 'v1' : 'v2';
+    if (state.indicatorData) {
+      renderSliderMap(state.indicatorData, sliderPeriod);
+      renderCartogram(state.indicatorData);
+    }
+  });
+}
+
+
+/* ══════════════════════════════════════════════════════
+   IDS — Índice de Desarrollo Sostenible
+   ══════════════════════════════════════════════════════ */
+let idsCurrentPeriod = 'v2';
+let idsCurrentSort   = 'ranking';
+let idsSearchText    = '';
+let idsMapLayer      = null;
+
+function renderIDSView() {
+  const container = document.getElementById('ids-table-body');
+  if (!container) return;
+  if (typeof IDS_DATA === 'undefined') {
+    container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Cargando datos IDS…</td></tr>';
+    return;
+  }
+  document.getElementById('ids-btn-v1')?.classList.toggle('active', idsCurrentPeriod === 'v1');
+  document.getElementById('ids-btn-v2')?.classList.toggle('active', idsCurrentPeriod === 'v2');
+
+  let entries = Object.entries(IDS_DATA).map(([id, d]) => ({
+    id, ...d,
+    ids:     idsCurrentPeriod === 'v1' ? d.ids_v1 : d.ids_v2,
+    ranking: idsCurrentPeriod === 'v1' ? d.ranking_v1 : d.ranking_v2,
+  }));
+
+  if (idsSearchText) {
+    const q = idsSearchText.toLowerCase();
+    entries = entries.filter(e => e.municipio.toLowerCase().includes(q));
+  }
+
+  if (idsCurrentSort === 'ranking')   entries.sort((a,b) => (a.ranking||999) - (b.ranking||999));
+  else if (idsCurrentSort === 'ids_desc') entries.sort((a,b) => (b.ids||0) - (a.ids||0));
+  else if (idsCurrentSort === 'cambio')   entries.sort((a,b) => (b.cambio_ids||0) - (a.cambio_ids||0));
+  else if (idsCurrentSort === 'municipio') entries.sort((a,b) => a.municipio.localeCompare(b.municipio));
+
+  container.innerHTML = entries.map(e => {
+    const ids    = e.ids !== null && e.ids !== undefined ? e.ids.toFixed(1) : '—';
+    const ids_v1 = e.ids_v1 !== null ? e.ids_v1.toFixed(1) : '—';
+    const ids_v2 = e.ids_v2 !== null ? e.ids_v2.toFixed(1) : '—';
+    const cambio = e.cambio_ids !== null ? (e.cambio_ids > 0 ? '+' : '') + e.cambio_ids.toFixed(1) : '—';
+    const cambioClass = e.cambio_ids > 0 ? 'positive' : e.cambio_ids < 0 ? 'negative' : 'neutral';
+    const pct = Math.min(100, Math.max(0, e.ids || 0));
+    const barColor = pct >= 70 ? '#3cb35a' : pct >= 50 ? '#f0c419' : pct >= 30 ? '#f48620' : '#e63946';
+    return '<tr>' +
+      '<td style="font-weight:700;color:var(--accent)">' + (e.ranking || '—') + '</td>' +
+      '<td style="font-weight:600">' + e.municipio + '</td>' +
+      '<td>' + getDepartamento(e.id) + '</td>' +
+      '<td>' + e.poblacion.toLocaleString() + '</td>' +
+      '<td><div style="display:flex;align-items:center;gap:8px">' +
+        '<div style="flex:1;background:var(--border);border-radius:4px;height:6px;min-width:60px">' +
+          '<div style="width:' + pct + '%;background:' + barColor + ';height:6px;border-radius:4px"></div>' +
+        '</div>' +
+        '<span style="font-weight:700;min-width:36px;text-align:right">' + ids + '</span>' +
+      '</div></td>' +
+      '<td>' + ids_v1 + '</td>' +
+      '<td>' + ids_v2 + '</td>' +
+      '<td class="tooltip-change ' + cambioClass + '" style="font-weight:600">' + cambio + '</td>' +
+      '</tr>';
+  }).join('');
+
+  const countEl = document.getElementById('ids-count');
+  if (countEl) countEl.textContent = entries.length + ' municipios';
+
+  // Render IDS map
+  renderIDSMap();
+}
+
+function renderIDSMap() {
+  if (!state.geoMun) return;
+  const mapEl = document.getElementById('ids-map');
+  if (!mapEl) return;
+
+  // Init map if needed
+  if (!window.idsMapInstance) {
+    const bounds = L.latLngBounds(BOLIVIA_BOUNDS[0], BOLIVIA_BOUNDS[1]);
+    window.idsMapInstance = L.map('ids-map', {
+      zoomControl: true, attributionControl: false, maxBounds: bounds.pad(0.3)
+    }).fitBounds(bounds);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+      { attribution: '©OSM ©Carto', subdomains: 'abcd', maxZoom: 19 }
+    ).addTo(window.idsMapInstance);
+  }
+
+  if (idsMapLayer) window.idsMapInstance.removeLayer(idsMapLayer);
+
+  function getIDSColor(ids) {
+    if (ids === null || ids === undefined) return '#e5e7eb';
+    if (ids >= 70) return '#1e3a5f';
+    if (ids >= 60) return '#2563a8';
+    if (ids >= 50) return '#5b9bd5';
+    if (ids >= 40) return '#93c4e6';
+    return '#c7e2f0';
+  }
+
+  idsMapLayer = L.geoJSON(state.geoMun, {
+    style: feature => {
+      const id = getFeatureId(feature);
+      const d  = (typeof IDS_DATA !== 'undefined') ?
+        (IDS_DATA[id] || IDS_DATA[String(parseInt(id))]) : null;
+      const ids = d ? (idsCurrentPeriod === 'v1' ? d.ids_v1 : d.ids_v2) : null;
+      return {
+        fillColor:   getIDSColor(ids),
+        fillOpacity: 0.85,
+        color:       '#fff',
+        weight:      0.5,
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      layer.on({
+        mouseover: e => {
+          e.target.setStyle({ weight: 2, color: '#1d4ed8' });
+          const id = getFeatureId(feature);
+          const name = getFeatureName(feature);
+          const d = (typeof IDS_DATA !== 'undefined') ?
+            (IDS_DATA[id] || IDS_DATA[String(parseInt(id))]) : null;
+          const ids_v1 = d ? d.ids_v1 : null;
+          const ids_v2 = d ? d.ids_v2 : null;
+          const rank   = d ? (idsCurrentPeriod === 'v1' ? d.ranking_v1 : d.ranking_v2) : null;
+          dom.tooltip.innerHTML =
+            '<div class="tooltip-name">' + name + '</div>' +
+            '<div class="tooltip-row"><span class="tooltip-key">IDS ~2012</span><span class="tooltip-val">' + (ids_v1 !== null ? ids_v1.toFixed(1) : '—') + '</span></div>' +
+            '<div class="tooltip-row"><span class="tooltip-key">IDS ~2024</span><span class="tooltip-val">' + (ids_v2 !== null ? ids_v2.toFixed(1) : '—') + '</span></div>' +
+            '<div class="tooltip-row"><span class="tooltip-key">Ranking</span><span class="tooltip-val">' + (rank || '—') + '</span></div>';
+          dom.tooltip.classList.remove('hidden');
+        },
+        mousemove: e => {
+          dom.tooltip.style.left = (e.originalEvent.clientX + 14) + 'px';
+          dom.tooltip.style.top  = (e.originalEvent.clientY - 10) + 'px';
+        },
+        mouseout: () => {
+          e.target.setStyle({ weight: 0.5, color: '#fff' });
+          hideTooltip();
+        }
+      });
+    }
+  }).addTo(window.idsMapInstance);
+
+  try {
+    const b = idsMapLayer.getBounds();
+    if (b.isValid()) window.idsMapInstance.fitBounds(b, { padding:[20,20], animate:false });
+  } catch(e) {}
+}
+
+function setIDSPeriod(p) { idsCurrentPeriod = p; renderIDSView(); }
+function setIDSSort(s)   { idsCurrentSort = s;   renderIDSView(); }
+
 function enterAtlas() {
   document.getElementById('landing-page').classList.add('hidden');
   document.getElementById('atlas-app').classList.remove('hidden');
@@ -234,7 +468,8 @@ function showView(view) {
 
   const isConv = view === 'convergencia';
 
-  document.getElementById('view-maps').classList.toggle('hidden', view === 'table' || isConv);
+  document.getElementById('view-maps').classList.toggle('hidden', view === 'table' || isConv || view === 'ids');
+  document.getElementById('view-ids')?.classList.toggle('hidden', view !== 'ids');
   document.getElementById('view-table').classList.toggle('hidden', view !== 'table');
 
   const convPanel = document.getElementById('convergencia-panel');
@@ -242,6 +477,7 @@ function showView(view) {
 
   if (view === 'table' && state.indicatorData) renderTable(state.indicatorData);
   if (isConv && state.indicatorData) renderConvergenciaView(state.indicatorData);
+  if (view === 'ids') renderIDSView();
 }
 
 /* ══════ LEGEND PERIOD ══════ */
@@ -260,91 +496,93 @@ function setLegendPeriod(period) {
    dir: 'asc' = mayor es mejor ↑ | 'desc' = menor es mejor ↓
    ══════════════════════════════════════════════════════ */
 const INDICATOR_FILES = [
-  { file: '01_02_02_01_mpi.xlsx', label: 'Índice de pobreza multidimensional',                                    dir: 'desc' },
-  { file: '01_04_01_02_eep.xlsx', label: 'Tasa de pobreza energética',                                            dir: 'desc' },
-  { file: '01_04_01_03_nbi.xlsx', label: 'Necesidades básicas insatisfechas',                                      dir: 'desc' },
-  { file: '01_04_02_05_ssb.xlsx', label: 'Acceso a los 3 servicios básicos',                                       dir: 'asc'  },
-  { file: '02_02_02_01_smu.xlsx', label: 'Obesidad en mujeres (15-49 años)',                                       dir: 'desc' },
-  { file: '02_02_02_02_dcn.xlsx', label: 'Desnutrición crónica niños < 5 años',                        dir: 'desc' },
-  { file: '02_02_02_03_osn.xlsx', label: 'Sobrepeso en niños < 5 años',                                   dir: 'desc' },
-  { file: '02_02_03_04_pam.xlsx', label: 'Prevalencia de anemia en mujeres (15-49 años)',                          dir: 'desc' },
-  { file: '02_03_01_05_pac.xlsx', label: 'Rendimiento de la producción agrícola',                                         dir: 'asc'  },
-  { file: '02_05_01_08_idp.xlsx', label: 'Índice de diversificación productiva con base SIIP',                                   dir: 'asc'  },
-  { file: '03_01_02_02_cpp.xlsx', label: 'Cobertura de partos atendidos por personal de salud calificado (%)',                   dir: 'asc'  },
-  { file: '03_02_01_03_tmi.xlsx', label: 'Tasa mortalidad infantil <1 año',                         dir: 'desc' },
-  { file: '03_02_01_04_tmn.xlsx', label: 'Tasa mortalidad niños <5 años',                        dir: 'desc' },
-  { file: '03_03_01_05_vih.xlsx', label: 'Incidencia de VIH',                                                     dir: 'desc' },
-  { file: '03_03_02_06_tub.xlsx', label: 'Incidencia de tuberculosis',                                             dir: 'desc' },
-  { file: '03_03_03_07_mal.xlsx', label: 'Incidencia de malaria',                                                  dir: 'desc' },
-  { file: '03_03_05_08_tic.xlsx', label: 'Tasa infestación chagas',                                          dir: 'desc' },
-  { file: '03_03_05_09_tid.xlsx', label: 'Incidencia de dengue',                                                   dir: 'desc' },
-  { file: '03_07_02_11_tfa.xlsx', label: 'Paridez media en adolescentes',                        dir: 'desc' },
-  { file: '04_01_02_01_ash.xlsx', label: 'Tasa abandono secundaria hombres',                       dir: 'desc' },
-  { file: '04_01_02_02_asm.xlsx', label: 'Tasa abandono secundaria mujeres',                       dir: 'desc' },
-  { file: '04_02_02_03_pfp.xlsx', label: 'Porcentaje de niños de 4 a 5 años que asisten a algún establecimiento preescolar',                           dir: 'asc'  },
-  { file: '04_03_04_04_pes.xlsx', label: 'Población con educación superior >19 años',                       dir: 'asc'  },
-  { file: '04_06_01_06_alf.xlsx', label: 'Tasa de alfabetización >15 años',                                 dir: 'asc'  },
-  { file: '04_10_01_07_pci.xlsx', label: 'Profesores calificados en nivel inicial',                                dir: 'asc'  },
-  { file: '04_10_01_09_pcs.xlsx', label: 'Profesores calificados en nivel secundario',                             dir: 'asc'  },
-  { file: '05_01_01_01_pga.xlsx', label: 'Paridad de género en abandono escolar en secundaria',                    dir: 'asc'  },
-  { file: '05_01_01_02_pgm.xlsx', label: 'Paridad de género en el índice de pobreza multidimensional',             dir: 'asc'  },
-  { file: '05_01_01_03_pge.xlsx', label: 'Paridad de género en años de educación de jóvenes',                      dir: 'asc'  },
-  { file: '05_01_01_04_pgp.xlsx', label: 'Paridad de género en la tasa global de participación',                   dir: 'asc'  },
-  { file: '05_05_01_05_acm.xlsx', label: 'Porcentaje de concejales mujeres',                                       dir: 'asc'  },
-  { file: '05_07_02_06_ttm.xlsx', label: 'Derechos de la mujer a propiedad/control de tierras (últimos 5 años previos al censo)',                  dir: 'asc'  },
-  { file: '06_01_01_01_cap.xlsx', label: 'Cobertura de agua potable',                                             dir: 'asc'  },
-  { file: '06_02_01_02_cas.xlsx', label: 'Cobertura de saneamiento',                                              dir: 'asc'  },
-  { file: '06_03_01_03_tar.xlsx', label: 'Tratamiento de aguas residuales',                                        dir: 'asc'  },
-  { file: '07_01_01_01_cep.xlsx', label: 'Consumo de electricidad residencial per cápita',                         dir: 'asc'  },
-  { file: '07_01_01_02_cae.xlsx', label: 'Cobertura de energía eléctrica (% de población)',                                        dir: 'asc'  },
-  { file: '07_01_02_03_elc.xlsx', label: 'Energía limpia para cocinar',                                           dir: 'asc'  },
-  { file: '07_02_01_04_ecp.xlsx', label: 'Emisiones de CO2 per cápita por energía eléctrica',                               dir: 'desc' },
-  { file: '08_04_02_01_mcc.xlsx', label: 'Medidores eléctricos residenciales con consumo cero',                    dir: 'desc' },
-  { file: '08_05_02_02_tgh.xlsx', label: 'Tasa global de participación hombres (≥ 14 años)',                 dir: 'asc'  },
-  { file: '08_05_02_03_tgm.xlsx', label: 'Tasa global de participación mujeres (≥ 14 años)',                 dir: 'asc'  },
-  { file: '08_06_01_04_eth.xlsx', label: 'Hombres que no estudian, ni participan en el mercado laboral (15-24 años)',                       dir: 'desc' },
-  { file: '08_06_01_05_etm.xlsx', label: 'Mujeres que no estudian, ni participan en el mercado laboral (15-24 años)',                       dir: 'desc' },
-  { file: '08_06_01_06_tch.xlsx', label: 'Hombres que realizan labores del hogar o labores de cuidado (15-24 años), (%)',                   dir: 'desc' },
-  { file: '08_06_01_07_tcm.xlsx', label: 'Mujeres que realizan labores del hogar o labores de cuidado (15-24 años), (%)',                   dir: 'desc' },
-  { file: '08_09_02_01_pot.xlsx', label: 'Población ocupada en actividades de turismo',                            dir: 'asc'  },
-  { file: '08_09_02_01_pot_INE.xlsx',   label: 'Poblacion ocupada en turismo (INE)',    dir: 'asc'  },
-  { file: '08_09_02_01_pot_ARLAT.xlsx', label: 'Poblacion ocupada en turismo (ARLAT)',  dir: 'asc'  },
-  { file: '08_09_02_02_pbt.xlsx', label: 'Porcentaje del PIB que corresponde al Turismo',                          dir: 'asc'  },
-  { file: '08_10_02_07_dsb.xlsx', label: 'Densidad de puntos de atencion financiera',                                      dir: 'asc'  },
-  { file: '09_01_01_01_vpc.xlsx', label: 'Cantidad de vias fundamentales que pasan dentro de un municipio',                          dir: 'asc'  },
-  { file: '09_08_01_01_ci.xlsx',  label: 'Cobertura de hogares con acceso a internet',                                     dir: 'asc'  },
-  { file: '09_08_01_05_drb.xlsx', label: 'Densidad de radio bases',                                                dir: 'asc'  },
-  { file: '09_08_01_06_tfc.xlsx', label: 'Cobertura de telefonía fija o celular',                                  dir: 'asc'  },
-  { file: '10_02_01_01_dce.xlsx', label: 'Desigualdad en el consumo de electricidad entre hogares',                dir: 'desc' },
-  { file: '10_02_01_02_esp.xlsx', label: 'Población que no habla español',                                        dir: 'desc' },
-  { file: '10_02_01_03_pel.xlsx', label: 'Paridad de pobreza multidimensional según condición étnica-lingüística',                         dir: 'asc'  },
-  { file: '10_02_01_06_epd.xlsx', label: 'Brecha educativa para personas con discapacidad',                        dir: 'asc'  },
-  { file: '10_02_01_07_mre.xlsx', label: 'Brecha de pobreza migrantes/no-migrantes',                              dir: 'asc'  },
-  { file: '10_02_01_08_tpm.xlsx', label: 'Brecha de pobreza multidimensional entre hogares con jefe adulto mayor y sin jefe adulto mayor',                        dir: 'asc'  },
-  { file: '10_04_02_04_gin.xlsx', label: 'Coeficiente de Gini de años de educación',                               dir: 'desc' },
-  { file: '11_01_01_01_thm.xlsx', label: 'Tasa de hacinamiento',                                                  dir: 'desc' },
-  { file: '11_01_01_02_ssb.xlsx', label: 'Hogares sin servicio sanitario o baño',                                  dir: 'desc' },
-  { file: '11_01_01_03_ava.xlsx', label: 'Porcentaje de viviendas adecuadas',                                     dir: 'asc'  },
-  { file: '11_02_01_04_atc.xlsx', label: 'Asientos disponibles en transporte colectivo',                           dir: 'asc'  },
-  { file: '11_06_02_05_ica.xlsx', label: 'Concentración media anual de PM2.5',                                    dir: 'desc' },
-  { file: '12_04_01_01_ipr.xlsx', label: 'Inversión y gasto público municipal en residuos sólidos per cápita',                      dir: 'asc'  },
-  { file: '12_04_02_02_srr.xlsx', label: 'Porcentaje de población con recolección de residuos',                                  dir: 'asc'  },
-  { file: '13_01_01_03_fec.xlsx', label: 'Intensidad de afectación por eventos climáticos extremos',                              dir: 'desc' },
-  { file: '13_01_03_01_icc.xlsx', label: 'Índice de vulnerabilidad al cambio climático',                           dir: 'desc' },
-  { file: '13_02_02_02_epb.xlsx', label: 'Emisiones de CO2 por pérdida de bosque per cápita',                     dir: 'desc' },
-  { file: '13_02_02_03_ect.xlsx', label: 'Emisiones de CO2 por transporte per cápita',                            dir: 'desc' },
-  { file: '13_02_02_04_eci.xlsx', label: 'Emisiones totales de CO2 por degradación por incendios per cápita',                             dir: 'desc' },
-  { file: '15_01_02_01_sap.xlsx', label: 'Porcentaje de superficie en áreas protegidas',                                        dir: 'asc'  },
-  { file: '15_02_01_05_tpb.xlsx', label: 'Tasa promedio de pérdida de bosque',                                    dir: 'desc' },
-  { file: '15_05_02_02_pbd.xlsx', label: 'Índice de pérdida de biodiversidad por deforestación',                  dir: 'desc' },
-  { file: '15_05_02_03_pbi.xlsx', label: 'Índice de pérdida de biodiversidad por incendios',                      dir: 'desc' },
-  { file: '16_01_01_01_thp.xlsx', label: 'Tasa de homicidios registrados',                                                    dir: 'desc' },
-  { file: '16_06_01_02_cep.xlsx', label: 'Capacidad de ejecución del presupuesto programado',                     dir: 'asc'  },
-  { file: '16_07_02_03_tcs.xlsx',   label: 'Cantidad de conflictos por año',    dir: 'desc' },
+  { file: '01_02_02_01_mpi.xlsx', label: 'Índice de pobreza multidimensional', dir: 'desc' },
+  { file: '01_04_01_02_eep.xlsx', label: 'Tasa de pobreza energética', dir: 'desc' },
+  { file: '01_04_01_03_nbi.xlsx', label: 'Porcentaje de la población con Necesidades Básicas Insatisfechas', dir: 'desc' },
+  { file: '01_04_02_05_ssb.xlsx', label: 'Porcentaje de hogares con acceso a los 3 servicios básicos', dir: 'asc' },
+  { file: '02_02_02_01_smu.xlsx', label: 'Porcentaje de mujeres con obesidad (15-49 años)', dir: 'desc' },
+  { file: '02_02_02_02_dcn.xlsx', label: 'Porcentaje de niños con desnutrición crónica (< 5 años)', dir: 'desc' },
+  { file: '02_02_02_03_osn.xlsx', label: 'Porcentaje de niños con sobrepeso (< 5 años)', dir: 'desc' },
+  { file: '02_02_03_04_pam.xlsx', label: 'Prevalencia de anemia en mujeres (15-49 años)', dir: 'desc' },
+  { file: '02_03_01_05_pac.xlsx', label: 'Producción agrícola per cápita', dir: 'asc' },
+  { file: '02_03_01_06_rpa.xlsx', label: 'Rendimiento de la producción agrícola', dir: 'asc' },
+  { file: '02_05_01_08_idp.xlsx', label: 'Índice de diversificación productiva con base SIIP', dir: 'asc' },
+  { file: '03_01_02_02_cpp.xlsx', label: 'Cobertura de partos atendidos por personal de salud calificado (%)', dir: 'asc' },
+  { file: '03_02_01_03_tmi.xlsx', label: 'Tasa mortalidad infantil (<1 año)', dir: 'desc' },
+  { file: '03_02_01_04_tmn.xlsx', label: 'Tasa mortalidad niños (<5 años)', dir: 'desc' },
+  { file: '03_03_01_05_vih.xlsx', label: 'Incidencia de VIH', dir: 'desc' },
+  { file: '03_03_02_06_tub.xlsx', label: 'Incidencia de tuberculosis', dir: 'desc' },
+  { file: '03_03_03_05_vec.xlsx', label: 'Indice de enfermedades por vectores', dir: 'asc' },
+  { file: '03_07_02_11_tfa.xlsx', label: 'Paridez media en adolescentes (15 a 19 años)', dir: 'desc' },
+  { file: '04_01_02_01_ash.xlsx', label: 'Tasa abandono secundaria, hombres', dir: 'desc' },
+  { file: '04_01_02_02_asm.xlsx', label: 'Tasa abandono secundaria, mujeres', dir: 'desc' },
+  { file: '04_02_02_03_tam.xlsx', label: 'Porcentaje de niñas de 4 a 5 años que asisten a algún establecimiento preescolar', dir: 'asc' },
+  { file: '04_02_02_04_tah.xlsx', label: 'Porcentaje de niños de 4 a 5 años que asisten a algún establecimiento preescolar', dir: 'asc' },
+  { file: '04_03_04_04_esh.xlsx', label: 'Población con educación superior, hombres (≥ 19 años) (%)', dir: 'asc' },
+  { file: '04_03_04_05_esm.xlsx', label: 'Población con educación superior, mujeres (≥ 19 años) (%)', dir: 'asc' },
+  { file: '04_06_01_06_alf.xlsx', label: 'Tasa de alfabetización >15 años', dir: 'asc' },
+  { file: '04_03_02_01_aeh.xlsx', label: 'Promedio de años de educación, hombres (25 a 35 años)', dir: 'asc' },
+  { file: '04_03_02_01_aem.xlsx', label: 'Promedio de años de educación, mujeres (25 a 35 años)', dir: 'asc' },
+  { file: '04_10_01_07_pci.xlsx', label: 'Porcentaje de profesores calificados en el nivel inicial', dir: 'asc' },
+  { file: '04_10_01_09_pcs.xlsx', label: 'Porcentaje de profesores calificados en el nivel secundario', dir: 'asc' },
+  { file: '05_01_01_01_pga.xlsx', label: 'Paridad de género en abandono escolar en secundaria', dir: 'asc' },
+  { file: '05_01_01_02_pgm.xlsx', label: 'Paridad de género en el índice de pobreza multidimensional', dir: 'asc' },
+  { file: '05_01_01_03_pge.xlsx', label: 'Paridad de género en años de educación de jóvenes (25 a 35 años)', dir: 'asc' },
+  { file: '05_01_01_04_pgp.xlsx', label: 'Paridad de género en la tasa global de participación', dir: 'asc' },
+  { file: '05_05_01_05_acm.xlsx', label: 'Porcentaje de concejales mujeres', dir: 'asc' },
+  { file: '05_04_01_01_phc.xlsx', label: 'Paridad de género en labores del hogar o labores de cuidado (15 a 24 años)', dir: 'asc' },
+  { file: '05_07_02_06_ttm.xlsx', label: 'Derechos de la mujer a propiedad/control de tierras', dir: 'asc' },
+  { file: '06_01_01_01_cap.xlsx', label: 'Porcentaje de la población con cobertura de agua potable', dir: 'asc' },
+  { file: '06_02_01_02_cas.xlsx', label: 'Porcentaje de la población con obertura de saneamiento', dir: 'asc' },
+  { file: '06_03_01_03_tar.xlsx', label: 'Porcentaje de aguas servidas con tratamiento de aguas residuales', dir: 'asc' },
+  { file: '07_01_01_01_cep.xlsx', label: 'Consumo de electricidad residencial per cápita', dir: 'asc' },
+  { file: '07_01_01_02_cae.xlsx', label: 'Porcentaje de la población con cobertura de energía eléctrica', dir: 'asc' },
+  { file: '07_01_02_03_elc.xlsx', label: 'Porcentaje de la población con energía limpia para cocinar', dir: 'asc' },
+  { file: '07_01_01_04_mcc.xlsx', label: 'Medidores eléctricos residenciales con consumo cero', dir: 'asc' },
+  { file: '08_05_02_02_tgh.xlsx', label: 'Tasa global de participación hombres (≥ 14 años)', dir: 'asc' },
+  { file: '08_05_02_03_tgm.xlsx', label: 'Tasa global de participación mujeres (≥ 14 años)', dir: 'asc' },
+  { file: '08_06_01_04_eth.xlsx', label: 'Hombres que no estudian, ni participan en el mercado laboral (15-24 años)', dir: 'desc' },
+  { file: '08_06_01_05_etm.xlsx', label: 'Mujeres que no estudian, ni participan en el mercado laboral (15-24 años)', dir: 'desc' },
+  { file: '08_09_02_01_pot.xlsx', label: 'Porcentaje de población ocupada en actividades económicas relacionadas con el turismo', dir: 'asc' },
+  { file: '08_09_02_02_pbt.xlsx', label: 'Porcentaje del PIB que corresponde al Turismo', dir: 'asc' },
+  { file: '08_10_02_07_dsb.xlsx', label: 'Densidad de puntos de atencion financiera', dir: 'asc' },
+  { file: '09_01_01_01_vpc.xlsx', label: 'Número de vias fundamentales que pasan dentro de un municipio', dir: 'asc' },
+  { file: '09_08_01_01_ci.xlsx', label: 'Cobertura de hogares con acceso a internet fijo o movil (%)', dir: 'asc' },
+  { file: '09_08_01_05_drb.xlsx', label: 'Densidad de radio bases', dir: 'asc' },
+  { file: '09_08_01_06_tfc.xlsx', label: 'Porcentaje de hogares con cobertura de telefonía fija o celular', dir: 'asc' },
+  { file: '10_02_01_09_gip.xlsx', label: 'Gini del Índice de Pobreza Multidimensional', dir: 'asc' },
+  { file: '10_02_01_02_esp.xlsx', label: 'Porcentaje de la población que no habla español', dir: 'desc' },
+  { file: '10_02_01_03_pel.xlsx', label: 'Paridad de pobreza multidimensional según condición étnica-lingüística', dir: 'asc' },
+  { file: '10_02_01_07_mre.xlsx', label: 'Paridad de pobreza multidimensional según condición de migración', dir: 'asc' },
+  { file: '10_02_01_08_tpm.xlsx', label: 'Paridad de pobreza multidimensional para adultos mayores', dir: 'asc' },
+  { file: '10_04_02_04_gin.xlsx', label: 'Coeficiente de Gini de años de educación', dir: 'desc' },
+  { file: '11_01_01_01_thm.xlsx', label: 'Tasa de hacinamiento', dir: 'desc' },
+  { file: '11_01_01_02_ssb.xlsx', label: 'Porcentaje de hogares sin servicio sanitario o baño', dir: 'desc' },
+  { file: '11_01_01_03_ava.xlsx', label: 'Porcentaje de viviendas adecuadas', dir: 'asc' },
+  { file: '11_02_01_04_atc.xlsx', label: 'Asientos disponibles en transporte colectivo', dir: 'asc' },
+  { file: '11_06_02_05_ica.xlsx', label: 'Concentración media anual de PM2.5', dir: 'desc' },
+  { file: '11_06_01_01_ipr.xlsx', label: 'Inversión y gasto público municipal en residuos sólidos per cápita', dir: 'asc' },
+  { file: '11_06_01_02_srr.xlsx', label: 'Porcentaje de viviendas con servicio de recolección de residuos sólidos', dir: 'asc' },
+  { file: '13_01_01_03_fec.xlsx', label: 'Intensidad de afectación por eventos climáticos extremos', dir: 'desc' },
+  { file: '13_01_03_01_icc.xlsx', label: 'Índice de vulnerabilidad al cambio climático', dir: 'desc' },
+  { file: '13_02_02_02_epb.xlsx', label: 'Emisiones de CO2 por pérdida de bosque per cápita', dir: 'desc' },
+  { file: '13_02_02_03_ect.xlsx', label: 'Emisiones de CO2 por transporte per cápita', dir: 'desc' },
+  { file: '13_02_02_04_eci.xlsx', label: 'Emisiones totales de CO2 por degradación por incendios per cápita', dir: 'desc' },
+  { file: '15_01_02_01_sap.xlsx', label: 'Porcentaje de superficie en áreas protegidas', dir: 'asc' },
+  { file: '15_02_01_05_tpb.xlsx', label: 'Tasa promedio de pérdida de bosque', dir: 'desc' },
+  { file: '15_05_02_02_pbd.xlsx', label: 'Índice de pérdida de biodiversidad por deforestación', dir: 'desc' },
+  { file: '15_05_02_03_pbi.xlsx', label: 'Índice de pérdida de biodiversidad por incendios', dir: 'desc' },
+  { file: '16_01_01_01_thp.xlsx', label: 'Tasa de homicidios registrados', dir: 'desc' },
+  { file: '16_06_01_02_cep.xlsx', label: 'Capacidad de ejecución del presupuesto programado', dir: 'asc' },
+  { file: '16_07_02_03_tcs.xlsx', label: 'Cantidad anual de conflictos sociales', dir: 'desc' },
+  { file: '16_09_01_04_nic.xlsx', label: 'Porcentaje de niños inscritos en registro civil', dir: 'asc' },
+  { file: '17_01_02_01_iil.xlsx', label: 'Proporción de ingresos municipales de impuestos locales', dir: 'asc' },
+  { file: '17_18_01_02_ipc.xlsx', label: 'Inversión pública per cápita', dir: 'asc' },
+  { file: '08_09_02_01_pot_INE.xlsx',   label: 'Poblacion ocupada en turismo (INE)',   dir: 'asc'  },
+  { file: '08_09_02_01_pot_ARLAT.xlsx', label: 'Poblacion ocupada en turismo (ARLAT)', dir: 'asc'  },
   { file: '16_07_02_03_tcs_1.xlsx', label: 'Tasa de conflictividad social', dir: 'desc', legendLabels: { grandes: 'Mayor a 3' } },
-  { file: '16_09_01_04_nic.xlsx', label: 'Niños inscritos en registro civil',                                  dir: 'asc'  },
-  { file: '17_01_02_01_iil.xlsx', label: 'Proporción de ingresos municipales de impuestos locales',                 dir: 'asc'  },
-  { file: '17_18_01_02_ipc.xlsx', label: 'Inversión pública per cápita',                                          dir: 'asc'  },
+  { file: '08_06_01_06_tch.xlsx', label: 'Hombres que realizan labores del hogar o labores de cuidado (15-24 años), (%)', dir: 'desc' },
+  { file: '08_06_01_07_tcm.xlsx', label: 'Mujeres que realizan labores del hogar o labores de cuidado (15-24 años), (%)', dir: 'desc' },
 ];
 
 const INDICATOR_DIR_MAP = {};
@@ -694,6 +932,11 @@ function renderMaps() {
   }
   state.layerLeft  = makeLayer(mapLeft,  'left');
   state.layerRight = makeLayer(mapRight, 'right');
+  // Also update cartogram/slider if in that mode
+  if (currentViewMode === 'cartogram' && state.indicatorData) {
+    renderSliderMap(state.indicatorData, sliderPeriod);
+    renderCartogram(state.indicatorData);
+  }
   try {
     const bounds = state.layerLeft.getBounds();
     if (bounds.isValid()) {
@@ -704,6 +947,167 @@ function renderMaps() {
     const b = L.latLngBounds(BOLIVIA_BOUNDS[0], BOLIVIA_BOUNDS[1]);
     mapLeft.fitBounds(b,  { padding: [20, 20], animate: false });
     mapRight.fitBounds(b, { padding: [20, 20], animate: false });
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   CARTOGRAM (Dorling-style with D3)
+   ══════════════════════════════════════════════════════ */
+
+function initCartogram() {
+  const container = document.getElementById('cartogram-container');
+  if (!container) return;
+  container.innerHTML = '';
+  cartogramInitialized = false;
+}
+
+function getPopulation(id, year) {
+  const key = String(id);
+  const keyPad = String(id).padStart(5, '0');
+  const pop = (typeof POPULATION_DATA !== 'undefined') ?
+    (POPULATION_DATA[key] || POPULATION_DATA[keyPad]) : null;
+  if (!pop) return 1000;
+  const y = String(year);
+  return pop[y] || pop['2024'] || 1000;
+}
+
+function renderCartogram(data) {
+  const container = document.getElementById('cartogram-container');
+  if (!container || !state.geoMun) return;
+
+  const period = sliderPeriod;
+  const mapData = data.mun;
+  const W = container.clientWidth  || 500;
+  const H = container.clientHeight || 500;
+
+  container.innerHTML = '';
+
+  const svg = d3.select(container).append('svg')
+    .attr('width', W).attr('height', H)
+    .style('background', 'transparent');
+
+  cartogramSvg = svg;
+
+  // Project GeoJSON to get centroids
+  const projection = d3.geoMercator().fitSize([W, H], state.geoMun);
+  const path = d3.geoPath().projection(projection);
+
+  // Build circles data
+  const features = state.geoMun.features;
+  const yearNum = period === 'v1' ? 2012 : 2024;
+
+  const circles = features.map(f => {
+    const id   = getFeatureId(f);
+    const name = getFeatureName(f);
+    const centroid = path.centroid(f);
+    const pop  = getPopulation(id, yearNum);
+    const entry = mapData.get(id);
+    const val  = entry ? (period === 'v1' ? (entry.v1 ?? entry.v2) : (entry.v2 ?? entry.v1)) : null;
+    const cat  = classify(val, data.thresholds, getIndicatorDir(data));
+    return { id, name, cx: centroid[0], cy: centroid[1], pop, val, cat, entry };
+  }).filter(d => isFinite(d.cx) && isFinite(d.cy));
+
+  // Scale radius by population
+  const maxPop = d3.max(circles, d => d.pop) || 1;
+  const rScale = d3.scaleSqrt().domain([0, maxPop]).range([2, Math.min(W, H) * 0.12]);
+
+  const ODS = {
+    meta:    '#3cb35a',
+    proximo: '#f0c419',
+    retos:   '#f48620',
+    grandes: '#e63946',
+    sin:     '#9ca3af'
+  };
+
+  // Draw circles
+  const g = svg.append('g');
+
+  g.selectAll('circle')
+    .data(circles)
+    .enter().append('circle')
+    .attr('cx', d => d.cx)
+    .attr('cy', d => d.cy)
+    .attr('r',  d => rScale(d.pop))
+    .attr('fill', d => ODS[d.cat] || ODS.sin)
+    .attr('fill-opacity', 0.82)
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 0.6)
+    .style('cursor', 'pointer')
+    .on('mouseover', function(event, d) {
+      d3.select(this).attr('stroke', '#1d4ed8').attr('stroke-width', 2).raise();
+      showCartogramTooltip(event, d, data);
+    })
+    .on('mousemove', function(event, d) {
+      showCartogramTooltip(event, d, data);
+    })
+    .on('mouseout', function() {
+      d3.select(this).attr('stroke', '#fff').attr('stroke-width', 0.6);
+      hideTooltip();
+    });
+
+  // Add label for large circles
+  g.selectAll('text')
+    .data(circles.filter(d => rScale(d.pop) > 18))
+    .enter().append('text')
+    .attr('x', d => d.cx)
+    .attr('y', d => d.cy + 4)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', d => Math.min(rScale(d.pop) * 0.38, 11))
+    .attr('fill', '#fff')
+    .attr('pointer-events', 'none')
+    .text(d => d.name.length > 12 ? d.name.slice(0, 10) + '…' : d.name);
+}
+
+function showCartogramTooltip(event, d, data) {
+  const v1 = d.entry?.v1, v2 = d.entry?.v2;
+  const diff = (v1 !== null && v2 !== null && v1 !== undefined && v2 !== undefined) ? (v2 - v1) : null;
+  const dir  = getIndicatorDir(data);
+  const favorable = diff === null ? null : (dir === 'asc' ? diff > 0 : diff < 0);
+  const sign = diff !== null ? (diff > 0 ? '+' : '') : '';
+  const dClass = diff === null ? 'neutral' : favorable ? 'positive' : 'negative';
+  const cat = d.cat;
+
+  dom.tooltip.innerHTML = `
+    <div class="tooltip-name">${d.name}</div>
+    <div style="font-size:10px;color:var(--text-light);margin-bottom:4px">Población ${sliderPeriod === 'v1' ? '2012' : '2024'}: ${d.pop.toLocaleString()}</div>
+    <div style="font-size:10px;color:var(--text-light);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px">Indicador</div>
+    <div class="tooltip-row"><span class="tooltip-key">${data.colLabels.v1}</span><span class="tooltip-val">${fmtNum(v1)}</span></div>
+    <div class="tooltip-row"><span class="tooltip-key">${data.colLabels.v2}</span><span class="tooltip-val">${fmtNum(v2)}</span></div>
+    ${diff !== null ? `<div class="tooltip-change ${dClass}">${favorable ? '▲' : '▼'} ${sign}${fmtNum(Math.abs(diff))}</div>` : ''}
+    <div style="font-size:10px;color:var(--text-light);margin-top:5px">Clasificación</div>
+    <span class="tooltip-status ${classStatusCSS(cat)}">${classLabel(cat)}</span>
+  `;
+  dom.tooltip.classList.remove('hidden');
+
+  const tx = event.clientX + 14;
+  const ty = event.clientY - 10;
+  dom.tooltip.style.left = tx + 'px';
+  dom.tooltip.style.top  = ty + 'px';
+}
+
+function updateSlider(period) {
+  sliderPeriod = period;
+  // Update map layers
+  if (state.indicatorData && state.geoMun) {
+    const data    = state.indicatorData;
+    const mapData = state.level === 'municipal' ? data.mun : data.dep;
+    const geo     = state.level === 'municipal' ? state.geoMun : state.geoDep;
+    if (state.layerLeft) mapLeft.removeLayer(state.layerLeft);
+    function makeSliderLayer(map) {
+      return L.geoJSON(geo, {
+        style: f => featureStyle(f, period === 'v1' ? 'left' : 'right', mapData, data.thresholds),
+        onEachFeature: (feature, layer) => {
+          layer.on({ mouseover: e => onFeatureHover(e, feature, period === 'v1' ? 'left' : 'right'), mouseout: () => hideTooltip(), click: e => onFeatureClick(e, feature) });
+        },
+      }).addTo(map);
+    }
+    state.layerLeft = makeSliderLayer(mapLeft);
+    // Update period label
+    const label = period === 'v1' ? (data.colLabels.v1display || data.colLabels.v1) : (data.colLabels.v2display || data.colLabels.v2);
+    document.getElementById('slider-period-label').textContent = label;
+    // Re-render cartogram
+    renderCartogram(data);
   }
 }
 

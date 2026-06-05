@@ -9,6 +9,9 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="population_data.js"></script>
+  <script src="ids_data.js"></script>
 </head>
 <body>
 
@@ -62,6 +65,10 @@
           <button class="nav-btn" onclick="showView('convergencia')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="7" r="2"/><path d="M7 15V9m10 6V9M7 9l10-2"/></svg>
             β-Convergencia
+          </button>
+          <button class="nav-btn" onclick="showView('ids')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3zM3 10h18v4H3zM3 17h18v4H3z"/></svg>
+            Ranking IDS
           </button>
         </nav>
       </div>
@@ -139,6 +146,19 @@
             <div class="indicator-titlebar-code" id="indicator-code"></div>
           </div>
 
+          <!-- Toggle: Dos mapas / Mapa+Cartograma -->
+          <div class="view-mode-toggle" id="view-mode-toggle">
+            <button class="view-mode-btn active" id="btn-dual-map" onclick="setViewMode('dual')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="9" height="18" rx="1"/><rect x="13" y="3" width="9" height="18" rx="1"/></svg>
+              Dos mapas
+            </button>
+            <button class="view-mode-btn" id="btn-cartogram" onclick="setViewMode('cartogram')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="12" r="4"/><circle cx="17" cy="8" r="5"/><circle cx="16" cy="18" r="3"/></svg>
+              Mapa + Cartograma
+            </button>
+          </div>
+
+          <!-- MODO: DOS MAPAS (original) -->
           <div class="maps-container" id="maps-container">
             <div class="map-panel" id="panel-left">
               <div class="map-header">
@@ -165,6 +185,49 @@
               <div class="map-wrapper">
                 <div id="map-right" class="leaflet-map"></div>
               </div>
+            </div>
+          </div>
+
+          <!-- MODO: MAPA + CARTOGRAMA con SLIDER -->
+          <div class="cartogram-layout hidden" id="cartogram-layout">
+            <div class="cartogram-panels-row">
+            <div class="cartogram-map-panel">
+              <div class="map-header">
+                <div class="period-badge period-left">Mapa Geográfico</div>
+                <div class="period-label" id="slider-period-label">Período Final</div>
+              </div>
+              <div class="map-wrapper">
+                <div id="map-slider" class="leaflet-map"></div>
+              </div>
+            </div>
+            <div class="map-divider">
+              <div class="divider-line"></div>
+              <div class="sync-indicator">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="12" r="4"/><circle cx="17" cy="8" r="5"/></svg>
+              </div>
+              <div class="divider-line"></div>
+            </div>
+            <div class="cartogram-map-panel">
+              <div class="map-header">
+                <div class="period-badge period-right">Cartograma · tamaño = población</div>
+                <div class="period-label" id="cartogram-period-label">Período Final</div>
+              </div>
+              <div class="map-wrapper" style="overflow:hidden">
+                <div id="cartogram-container" class="cartogram-canvas"></div>
+              </div>
+            </div>
+            </div><!-- /cartogram-panels-row -->
+            <!-- SLIDER TEMPORAL -->
+            <div class="temporal-slider-bar" id="temporal-slider-bar">
+              <span class="slider-label-left" id="slider-label-v1">Período Inicial</span>
+              <div class="slider-track-wrap">
+                <input type="range" id="temporal-slider" min="0" max="1" step="1" value="1" class="temporal-slider" />
+                <div class="slider-ticks">
+                  <span>Inicial</span>
+                  <span>Final</span>
+                </div>
+              </div>
+              <span class="slider-label-right" id="slider-label-v2">Período Final</span>
             </div>
           </div>
 
@@ -271,6 +334,67 @@
           <div id="conv-dot-tooltip" class="conv-dot-tooltip" style="display:none"></div>
         </div>
       </main>
+    </div>
+  </div>
+
+
+  <!-- ══════ VIEW: IDS ══════ -->
+  <div id="view-ids" class="view-ids hidden">
+    <div class="ids-layout">
+      <!-- LEFT: MAP -->
+      <div class="ids-map-panel">
+        <div class="ids-map-header">
+          <div class="ids-map-title">Índice Municipal de Desarrollo Sostenible (IMDS)</div>
+          <div class="table-mode-toggle">
+            <button class="table-mode-btn active" id="ids-btn-v2" onclick="setIDSPeriod('v2')">~2024</button>
+            <button class="table-mode-btn" id="ids-btn-v1" onclick="setIDSPeriod('v1')">~2012</button>
+          </div>
+          <div class="ids-map-legend">
+            <div class="ids-legend-item"><span style="background:#1e3a5f"></span>&gt;70</div>
+            <div class="ids-legend-item"><span style="background:#2563a8"></span>60 – 70</div>
+            <div class="ids-legend-item"><span style="background:#5b9bd5"></span>50 – 60</div>
+            <div class="ids-legend-item"><span style="background:#93c4e6"></span>40 – 50</div>
+            <div class="ids-legend-item"><span style="background:#c7e2f0"></span>&lt;40</div>
+            <div class="ids-legend-item"><span style="background:#e5e7eb"></span>Sin datos</div>
+          </div>
+        </div>
+        <div id="ids-map" class="ids-map-canvas"></div>
+      </div>
+      <!-- RIGHT: TABLE -->
+      <div class="ids-table-panel">
+        <div class="table-toolbar" style="padding:10px 12px">
+          <div class="table-controls" style="flex-wrap:wrap;gap:8px">
+            <select class="table-search-input" style="width:auto;padding:5px 8px;font-size:12px" onchange="setIDSSort(this.value)">
+              <option value="ranking">Por Ranking</option>
+              <option value="ids_desc">Por IDS (mayor)</option>
+              <option value="cambio">Por Cambio</option>
+              <option value="municipio">Por Municipio</option>
+            </select>
+            <input type="text" id="ids-search" placeholder="Filtrar municipios…" class="table-search-input"
+              style="font-size:12px" oninput="idsSearchText=this.value;renderIDSView()" />
+            <span id="ids-count" style="font-size:11px;color:var(--text-muted);white-space:nowrap;align-self:center"></span>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th onclick="setIDSSort('ranking')" style="cursor:pointer">Rank</th>
+                <th onclick="setIDSSort('municipio')" style="cursor:pointer">Municipio</th>
+                <th>Depto.</th>
+                <th>Pob.</th>
+                <th onclick="setIDSSort('ids_desc')" style="cursor:pointer">IDS</th>
+                <th>~2012</th>
+                <th>~2024</th>
+                <th onclick="setIDSSort('cambio')" style="cursor:pointer">Δ</th>
+              </tr>
+            </thead>
+            <tbody id="ids-table-body">
+              <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">Cargando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
