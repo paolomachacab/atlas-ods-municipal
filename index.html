@@ -37,25 +37,6 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         Explorar el Atlas
       </button>
-      <div class="landing-sdg-pills">
-        <span class="sdg-pill" style="--sdg-c:#e5243b">ODS 1</span>
-        <span class="sdg-pill" style="--sdg-c:#dda63a">ODS 2</span>
-        <span class="sdg-pill" style="--sdg-c:#4c9f38">ODS 3</span>
-        <span class="sdg-pill" style="--sdg-c:#c5192d">ODS 4</span>
-        <span class="sdg-pill" style="--sdg-c:#ff3a21">ODS 5</span>
-        <span class="sdg-pill" style="--sdg-c:#26bde2">ODS 6</span>
-        <span class="sdg-pill" style="--sdg-c:#fcc30b">ODS 7</span>
-        <span class="sdg-pill" style="--sdg-c:#a21942">ODS 8</span>
-        <span class="sdg-pill" style="--sdg-c:#fd6925">ODS 9</span>
-        <span class="sdg-pill" style="--sdg-c:#dd1367">ODS 10</span>
-        <span class="sdg-pill" style="--sdg-c:#fd9d24">ODS 11</span>
-        <span class="sdg-pill" style="--sdg-c:#bf8b2e">ODS 12</span>
-        <span class="sdg-pill" style="--sdg-c:#3f7e44">ODS 13</span>
-        <span class="sdg-pill" style="--sdg-c:#0a97d9">ODS 14</span>
-        <span class="sdg-pill" style="--sdg-c:#56c02b">ODS 15</span>
-        <span class="sdg-pill" style="--sdg-c:#00689d">ODS 16</span>
-        <span class="sdg-pill" style="--sdg-c:#19486a">ODS 17</span>
-      </div>
     </div>
   </div>
 
@@ -73,22 +54,10 @@
       </div>
       <div class="header-center">
         <nav class="main-nav">
-          <button class="nav-btn active" onclick="showView('maps')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
-            Mapas
-          </button>
-          <button class="nav-btn" onclick="showView('table')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-            Tabla de datos
-          </button>
-          <button class="nav-btn" onclick="showView('convergencia')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="7" r="2"/><path d="M7 15V9m10 6V9M7 9l10-2"/></svg>
-            β-Convergencia
-          </button>
-          <button class="nav-btn" onclick="showView('ids')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3zM3 10h18v4H3zM3 17h18v4H3z"/></svg>
-            Ranking IDS
-          </button>
+          <button class="nav-btn active" onclick="showView('maps')">Mapas</button>
+          <button class="nav-btn" onclick="showView('table')">Tabla de datos</button>
+          <button class="nav-btn" onclick="showView('convergencia')">β-Convergencia</button>
+          <button class="nav-btn" onclick="showView('ids')">Ranking IDS</button>
         </nav>
       </div>
       <div class="header-right">
@@ -171,12 +140,6 @@
             <div id="mun-info-card" class="mun-card"></div>
           </div>
 
-          <div class="sidebar-footer">
-            <button class="action-btn" id="btn-export">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Exportar PNG
-            </button>
-          </div>
         </aside>
 
         <!-- MAP AREA -->
@@ -231,13 +194,7 @@
                 <div id="map-slider" class="leaflet-map"></div>
               </div>
             </div>
-            <div class="map-divider">
-              <div class="divider-line"></div>
-              <div class="sync-indicator">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="12" r="4"/><circle cx="17" cy="8" r="5"/></svg>
-              </div>
-              <div class="divider-line"></div>
-            </div>
+            <div class="map-divider"></div>
             <div class="cartogram-map-panel">
               <div class="map-header">
                 <div class="period-badge period-right">Cartograma · tamaño = población</div>
@@ -284,10 +241,6 @@
             <button class="table-mode-btn" id="btn-table-absolute">Valor absoluto</button>
           </div>
           <input type="text" id="table-search" placeholder="Filtrar municipios…" class="table-search-input" />
-          <button class="action-btn" id="btn-download-csv" style="width:auto">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Descargar CSV
-          </button>
         </div>
       </div>
       <div class="table-container">
@@ -406,6 +359,12 @@
 
 
   <div id="map-tooltip" class="map-tooltip hidden"></div>
+
+  <!-- Floating exit button — only visible in browser fullscreen -->
+  <button id="fullscreen-exit-btn" title="Salir de pantalla completa" onclick="document.exitFullscreen && document.exitFullscreen()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+
   <script src="script.js?v=15"></script>
 
 </body>
