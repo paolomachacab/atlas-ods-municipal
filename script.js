@@ -440,8 +440,8 @@ function renderIDSMap() {
           dom.tooltip.style.left = (e.originalEvent.clientX + 14) + 'px';
           dom.tooltip.style.top  = (e.originalEvent.clientY - 10) + 'px';
         },
-        mouseout: () => {
-          e.target.setStyle({ weight: 0.5, color: '#fff' });
+        mouseout: ev => {
+          ev.target.setStyle({ weight: 0.5, color: '#fff' });
           hideTooltip();
         }
       });
@@ -466,18 +466,23 @@ function showView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.nav-btn[onclick="showView('${view}')"]`).classList.add('active');
 
-  const isConv = view === 'convergencia';
+  const isConv  = view === 'convergencia';
+  const isIds   = view === 'ids';
+  const isTable = view === 'table';
 
-  document.getElementById('view-maps').classList.toggle('hidden', view === 'table' || isConv || view === 'ids');
-  document.getElementById('view-ids')?.classList.toggle('hidden', view !== 'ids');
-  document.getElementById('view-table').classList.toggle('hidden', view !== 'table');
+  document.getElementById('view-maps').classList.toggle('hidden', isTable || isConv || isIds);
+  document.getElementById('view-ids')?.classList.toggle('hidden', !isIds);
+  document.getElementById('view-table').classList.toggle('hidden', !isTable);
+  document.getElementById('view-convergencia')?.classList.toggle('hidden', !isConv);
 
-  const convPanel = document.getElementById('convergencia-panel');
-  if (convPanel) convPanel.classList.toggle('hidden', !isConv);
-
-  if (view === 'table' && state.indicatorData) renderTable(state.indicatorData);
-  if (isConv && state.indicatorData) renderConvergenciaView(state.indicatorData);
-  if (view === 'ids') renderIDSView();
+  if (isTable && state.indicatorData) renderTable(state.indicatorData);
+  if (isConv && state.indicatorData) {
+    setTimeout(() => renderConvergenciaView(state.indicatorData), 50);
+  }
+  if (isIds) {
+    renderIDSView();
+    setTimeout(() => { if (window.idsMapInstance) window.idsMapInstance.invalidateSize(); }, 120);
+  }
 }
 
 /* ══════ LEGEND PERIOD ══════ */
@@ -1926,6 +1931,62 @@ function downloadCSV(data) {
   a.click();
 }
 
+/* ══════════════════════════════════════════════════════
+   ODS FILTER — pill buttons that narrow the indicator dropdown
+   ══════════════════════════════════════════════════════ */
+let currentODSFilter = 'all';
+
+function initODSFilter() {
+  const pills = document.getElementById('ods-filter-pills');
+  if (!pills) return;
+  pills.addEventListener('click', e => {
+    const btn = e.target.closest('.ods-pill-btn');
+    if (!btn) return;
+    applyODSFilter(btn.dataset.ods);
+  });
+}
+
+function applyODSFilter(filter) {
+  currentODSFilter = filter;
+  document.querySelectorAll('#ods-filter-pills .ods-pill-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.ods === filter);
+  });
+
+  const sel = $('indicator-select');
+  const convSel = $('conv-indicator-select');
+  if (!sel) return;
+
+  for (const grp of sel.querySelectorAll('optgroup')) {
+    const m = grp.label.match(/ODS\s+(\d+)/);
+    const odsNum = m ? m[1].padStart(2, '0') : '';
+    const visible = filter === 'all' || odsNum === filter;
+    for (const opt of grp.querySelectorAll('option')) {
+      opt.disabled = !visible;
+      opt.style.display = visible ? '' : 'none';
+    }
+  }
+  if (convSel) {
+    for (const grp of convSel.querySelectorAll('optgroup')) {
+      const m = grp.label.match(/ODS\s+(\d+)/);
+      const odsNum = m ? m[1].padStart(2, '0') : '';
+      const visible = filter === 'all' || odsNum === filter;
+      for (const opt of grp.querySelectorAll('option')) {
+        opt.disabled = !visible;
+        opt.style.display = visible ? '' : 'none';
+      }
+    }
+  }
+
+  /* If current selection is now hidden, reset to first visible option */
+  const cur = sel.options[sel.selectedIndex];
+  if (cur && cur.disabled) {
+    sel.value = '';
+    for (const opt of sel.options) {
+      if (!opt.disabled && opt.value) { sel.value = opt.value; break; }
+    }
+  }
+}
+
 async function init() {
   setLoading(true, 'Iniciando atlas…');
   initMaps();
@@ -1947,6 +2008,8 @@ async function init() {
   }
 
   initSearch();
+  initSlider();
+  initODSFilter();
   const selEl = $('indicator-select');
   if (selEl) selEl.addEventListener('change', e => {
     const opt  = selEl.options[selEl.selectedIndex];
