@@ -507,25 +507,53 @@ html, body {
   border: 1px solid var(--border); white-space: nowrap;
 }
 
-/* ── View mode toggle — flat tabbar ── */
+/* ── View mode toggle — compact icon buttons, floating top-right ── */
 .view-mode-toggle {
-  display: flex; gap: 0;
-  padding: 0 14px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  position: absolute;
+  top: 8px; right: 12px; z-index: 20;
+  display: flex; gap: 1px;
+  background: rgba(255,255,255,.96);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  box-shadow: var(--shadow-sm);
 }
 .view-mode-btn {
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 14px; border-radius: 0;
-  border: none; border-bottom: 2px solid transparent;
-  font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 700;
-  color: var(--text-muted); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 24px;
+  padding: 0; border-radius: var(--radius-xs);
+  border: none; background: transparent;
+  color: var(--text-light);
   cursor: pointer; transition: var(--transition);
-  margin-bottom: -1px;
 }
-.view-mode-btn:hover { color: var(--text-main); }
-.view-mode-btn.active { color: var(--accent); background: transparent; border-bottom-color: var(--accent); }
+.view-mode-btn:hover { color: var(--text-main); background: var(--bg); }
+.view-mode-btn.active { color: var(--blue); background: var(--blue-ghost); }
+
+/* ── 3D page-flip for mode switching ── */
+.map-area { perspective: 1200px; }
+
+#maps-container, #cartogram-layout {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transform-origin: center center;
+}
+
+.mode-flip-out {
+  animation: modeFlipOut 0.2s ease-in forwards;
+  pointer-events: none;
+}
+.mode-flip-in {
+  animation: modeFlipIn 0.22s ease-out both;
+}
+
+@keyframes modeFlipOut {
+  from { transform: rotateY(0deg); opacity: 1; }
+  to   { transform: rotateY(-90deg); opacity: 0; }
+}
+@keyframes modeFlipIn {
+  from { transform: rotateY(90deg); opacity: 0; }
+  to   { transform: rotateY(0deg); opacity: 1; }
+}
 
 /* ── Dual-map layout ── */
 .maps-container {
@@ -952,35 +980,39 @@ html, body {
 .cartogram-map-panel:last-of-type { border-right: none; }
 .cartogram-canvas { flex: 1; width: 100%; height: 100%; background: var(--bg); }
 
-/* Cartogram temporal slider — minimal 36px */
+/* Cartogram temporal slider — 32px, minimal */
 .temporal-slider-bar {
-  display: flex; align-items: center; gap: 12px;
-  padding: 0 18px; height: 36px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 16px; height: 32px;
   background: transparent; border-top: 1px solid var(--border); flex-shrink: 0;
 }
 .slider-label-left, .slider-label-right {
-  font-size: 10.5px; font-weight: 700; color: var(--text-muted);
-  white-space: nowrap; min-width: 80px;
+  font-size: 10px; font-weight: 400; color: #9ca3af;
+  white-space: nowrap; min-width: 72px;
 }
 .slider-label-right { text-align: right; }
 .slider-track-wrap { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .temporal-slider {
-  width: 100%; height: 3px;
+  width: 100%; height: 2px;
   -webkit-appearance: none; appearance: none;
-  background: linear-gradient(to right, var(--blue-pale), var(--accent));
-  border-radius: 3px; outline: none; cursor: pointer;
+  background: #e5e7eb;
+  border-radius: 2px; outline: none; cursor: pointer;
 }
 .temporal-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--accent); border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(26,92,168,.25); cursor: pointer;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: white; border: 1px solid #9ca3af;
+  box-shadow: none; cursor: pointer;
 }
 .temporal-slider::-moz-range-thumb {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--accent); border: 2px solid #fff; cursor: pointer;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: white; border: 1px solid #9ca3af;
+  box-shadow: none; cursor: pointer;
 }
-.slider-ticks { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-light); }
+.slider-ticks { display: none; }
+
+/* Slider map crossfade */
+#map-slider { transition: opacity 0.15s ease; }
 
 /* ─────────────────────────────────────────────
    FULLSCREEN — hide header, show floating exit

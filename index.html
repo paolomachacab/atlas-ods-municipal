@@ -149,15 +149,19 @@
             <div class="indicator-titlebar-code" id="indicator-code"></div>
           </div>
 
-          <!-- Toggle: Dos mapas / Mapa+Cartograma -->
+          <!-- Toggle: Dos mapas / Mapa+Cartograma — minimal icon buttons -->
           <div class="view-mode-toggle" id="view-mode-toggle">
-            <button class="view-mode-btn active" id="btn-dual-map" onclick="setViewMode('dual')">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="1"/><path d="M2 9h20"/></svg>
-              Mapa Temporal
+            <button class="view-mode-btn active" id="btn-dual-map" onclick="setViewMode('dual')" title="Mapa temporal (dos períodos)">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                <rect x=".5" y=".5" width="6" height="11" rx="1" stroke="currentColor" stroke-width="1.3"/>
+                <rect x="9.5" y=".5" width="6" height="11" rx="1" stroke="currentColor" stroke-width="1.3"/>
+              </svg>
             </button>
-            <button class="view-mode-btn" id="btn-cartogram" onclick="setViewMode('cartogram')">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="12" r="4"/><circle cx="17" cy="8" r="5"/><circle cx="16" cy="18" r="3"/></svg>
-              Mapa + Cartograma
+            <button class="view-mode-btn" id="btn-cartogram" onclick="setViewMode('cartogram')" title="Mapa + Cartograma">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                <rect x=".5" y=".5" width="7" height="11" rx="1" stroke="currentColor" stroke-width="1.3"/>
+                <circle cx="12.5" cy="6" r="3.2" stroke="currentColor" stroke-width="1.3"/>
+              </svg>
             </button>
           </div>
 
@@ -366,6 +370,132 @@
   </button>
 
   <script src="script.js?v=15"></script>
+
+  <script>
+  /* ─── FIX 1: showView override — debounce + invalidateSize + overlay fix ─── */
+  (function () {
+    var _lock = false;
+
+    window.showView = function (view) {
+      if (_lock) return;
+      _lock = true;
+      setTimeout(function () { _lock = false; }, 300);
+
+      /* Update nav active state */
+      document.querySelectorAll('.nav-btn').forEach(function (b) { b.classList.remove('active'); });
+      var btn = document.querySelector('.nav-btn[onclick="showView(\'' + view + '\')"]');
+      if (btn) btn.classList.add('active');
+
+      var isMaps  = view === 'maps';
+      var isTable = view === 'table';
+      var isConv  = view === 'convergencia';
+      var isIds   = view === 'ids';
+
+      /* Toggle view containers */
+      var vMaps  = document.getElementById('view-maps');
+      var vTable = document.getElementById('view-table');
+      var vConv  = document.getElementById('view-convergencia');
+      var vIds   = document.getElementById('view-ids');
+      if (vMaps)  vMaps.classList.toggle('hidden', !isMaps);
+      if (vTable) vTable.classList.toggle('hidden', !isTable);
+      if (vConv)  vConv.classList.toggle('hidden', !isConv);
+      if (vIds)   vIds.classList.toggle('hidden', !isIds);
+
+      /* Clear stuck loading overlay when leaving maps view */
+      if (!isMaps) {
+        var ol = document.getElementById('loading-overlay');
+        if (ol) ol.classList.add('hidden');
+      }
+
+      /* Per-view post-show actions */
+      if (isMaps) {
+        setTimeout(function () {
+          if (typeof mapLeft  !== 'undefined' && mapLeft)  mapLeft.invalidateSize();
+          if (typeof mapRight !== 'undefined' && mapRight) mapRight.invalidateSize();
+        }, 60);
+      } else if (isTable) {
+        if (typeof state !== 'undefined' && state.indicatorData && typeof renderTable === 'function') {
+          renderTable(state.indicatorData);
+        }
+      } else if (isConv) {
+        setTimeout(function () {
+          if (typeof state !== 'undefined' && state.indicatorData && typeof renderConvergenciaView === 'function') {
+            try { renderConvergenciaView(state.indicatorData); } catch (e) {}
+          }
+        }, 100);
+      } else if (isIds) {
+        if (typeof renderIDSView === 'function') renderIDSView();
+        setTimeout(function () {
+          if (window.idsMapInstance) window.idsMapInstance.invalidateSize();
+        }, 150);
+      }
+    };
+  })();
+
+  /* ─── FIX 2: setViewMode override — book-page flip transition ─── */
+  (function () {
+    var _flipping = false;
+    var _origSetVM = window.setViewMode;
+
+    window.setViewMode = function (mode) {
+      if (_flipping) return;
+      if (typeof currentViewMode !== 'undefined' && currentViewMode === mode) return;
+      if (typeof _origSetVM !== 'function') return;
+
+      var outEl = (mode === 'dual')
+        ? document.getElementById('cartogram-layout')
+        : document.getElementById('maps-container');
+      var inEl  = (mode === 'dual')
+        ? document.getElementById('maps-container')
+        : document.getElementById('cartogram-layout');
+
+      if (!outEl || !inEl) { _origSetVM(mode); return; }
+
+      _flipping = true;
+
+      /* Phase 1 — flip current view out */
+      outEl.classList.add('mode-flip-out');
+
+      setTimeout(function () {
+        outEl.classList.remove('mode-flip-out');
+
+        /* Original toggles hidden classes + updates btn states */
+        _origSetVM(mode);
+
+        /* Phase 2 — flip new view in (needs two rAFs to catch display change) */
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            inEl.classList.add('mode-flip-in');
+            setTimeout(function () {
+              inEl.classList.remove('mode-flip-in');
+              /* Leaflet resize after animation */
+              if (mode === 'cartogram' && typeof mapSlider !== 'undefined' && mapSlider) {
+                mapSlider.invalidateSize();
+              } else if (mode === 'dual') {
+                if (typeof mapLeft  !== 'undefined' && mapLeft)  mapLeft.invalidateSize();
+                if (typeof mapRight !== 'undefined' && mapRight) mapRight.invalidateSize();
+              }
+              _flipping = false;
+            }, 240);
+          });
+        });
+      }, 200);
+    };
+  })();
+
+  /* ─── FIX 3: Slider crossfade — capture-phase listener fades map out/in ─── */
+  document.addEventListener('DOMContentLoaded', function () {
+    var slider = document.getElementById('temporal-slider');
+    var mapEl  = document.getElementById('map-slider');
+    if (!slider || !mapEl) return;
+
+    /* Capture phase fires before the original bubble listener in initSlider() */
+    slider.addEventListener('input', function () {
+      mapEl.style.opacity = '0';
+      setTimeout(function () { mapEl.style.opacity = '1'; }, 150);
+    }, true);
+  });
+  </script>
 
 </body>
 </html>
