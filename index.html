@@ -412,6 +412,7 @@
         setTimeout(function () {
           if (typeof mapLeft  !== 'undefined' && mapLeft)  mapLeft.invalidateSize();
           if (typeof mapRight !== 'undefined' && mapRight) mapRight.invalidateSize();
+          if (typeof mapSlider !== 'undefined' && mapSlider) mapSlider.invalidateSize();
         }, 60);
       } else if (isTable) {
         if (typeof state !== 'undefined' && state.indicatorData && typeof renderTable === 'function') {

@@ -97,11 +97,6 @@ const ALL_THRESHOLDS = {
   '16_09_01_04_nic': { meta:{max:100,min:95}, proximo:{max:95,min:90}, retos:{max:90,min:85}, grandes:{max:85,min:0} },
   '17_01_02_01_iil': { meta:{max:100,min:15}, proximo:{max:15,min:10}, retos:{max:10,min:5}, grandes:{max:5,min:0} },
   '17_18_01_02_ipc': { meta:{max:3753.42862,min:463.08671}, proximo:{max:463.08671,min:252.87894}, retos:{max:252.87894,min:42.67117}, grandes:{max:42.67117,min:0} },
-  '08_09_02_01_pot_INE':   { meta:{max:2000,min:10}, proximo:{max:10,min:5}, retos:{max:5,min:2.5}, grandes:{max:2.5,min:0} },
-  '08_09_02_01_pot_ARLAT': { meta:{max:2000,min:10}, proximo:{max:10,min:5}, retos:{max:5,min:2.5}, grandes:{max:2.5,min:0} },
-  '16_07_02_03_tcs_1': { meta:{max:0,min:1}, proximo:{max:1,min:2}, retos:{max:2,min:3}, grandes:{max:3,min:1000} },
-  '08_06_01_06_tch': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:100} },
-  '08_06_01_07_tcm': { meta:{max:0,min:10}, proximo:{max:10,min:12.5}, retos:{max:12.5,min:15}, grandes:{max:15,min:100} },
 };
 
 /* ══════════════════════════════════════════════════════
@@ -198,11 +193,6 @@ const PERIOD_LABELS = {
   '16_09_01_04_nic': { v1: 'Valor 2012', v2: 'Valor 2024' },
   '17_01_02_01_iil': { v1: 'Promedio 2011-2013', v2: 'Promedio 2021-2023' },
   '17_18_01_02_ipc': { v1: 'Valor 2017', v2: 'Valor 2024' },
-  '08_09_02_01_pot_INE': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '08_09_02_01_pot_ARLAT': { v1: '', v2: '' },
-  '16_07_02_03_tcs_1': { v1: 'Promedio 2018-2020', v2: 'Promedio 2022-2024' },
-  '08_06_01_06_tch': { v1: 'Valor 2012', v2: 'Valor 2024' },
-  '08_06_01_07_tcm': { v1: 'Valor 2012', v2: 'Valor 2024' },
 };
 
 /* ══════ MAPA DE DEPARTAMENTOS POR CÓDIGO ══════ */
@@ -457,11 +447,6 @@ function renderIDSMap() {
 function setIDSPeriod(p) { idsCurrentPeriod = p; renderIDSView(); }
 function setIDSSort(s)   { idsCurrentSort = s;   renderIDSView(); }
 
-function enterAtlas() {
-  document.getElementById('landing-page').classList.add('hidden');
-  document.getElementById('atlas-app').classList.remove('hidden');
-}
-
 function showView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.nav-btn[onclick="showView('${view}')"]`).classList.add('active');
@@ -517,7 +502,7 @@ const INDICATOR_FILES = [
   { file: '03_02_01_04_tmn.xlsx', label: 'Tasa mortalidad niños (<5 años)', dir: 'desc' },
   { file: '03_03_01_05_vih.xlsx', label: 'Incidencia de VIH', dir: 'desc' },
   { file: '03_03_02_06_tub.xlsx', label: 'Incidencia de tuberculosis', dir: 'desc' },
-  { file: '03_03_03_05_vec.xlsx', label: 'Indice de enfermedades por vectores', dir: 'asc' },
+  { file: '03_03_03_05_vec.xlsx', label: 'Indice de enfermedades por vectores', dir: 'desc' },
   { file: '03_07_02_11_tfa.xlsx', label: 'Paridez media en adolescentes (15 a 19 años)', dir: 'desc' },
   { file: '04_01_02_01_ash.xlsx', label: 'Tasa abandono secundaria, hombres', dir: 'desc' },
   { file: '04_01_02_02_asm.xlsx', label: 'Tasa abandono secundaria, mujeres', dir: 'desc' },
@@ -583,11 +568,6 @@ const INDICATOR_FILES = [
   { file: '16_09_01_04_nic.xlsx', label: 'Porcentaje de niños inscritos en registro civil', dir: 'asc' },
   { file: '17_01_02_01_iil.xlsx', label: 'Proporción de ingresos municipales de impuestos locales', dir: 'asc' },
   { file: '17_18_01_02_ipc.xlsx', label: 'Inversión pública per cápita', dir: 'asc' },
-  { file: '08_09_02_01_pot_INE.xlsx',   label: 'Poblacion ocupada en turismo (INE)',   dir: 'asc'  },
-  { file: '08_09_02_01_pot_ARLAT.xlsx', label: 'Poblacion ocupada en turismo (ARLAT)', dir: 'asc'  },
-  { file: '16_07_02_03_tcs_1.xlsx', label: 'Tasa de conflictividad social', dir: 'desc', legendLabels: { grandes: 'Mayor a 3' } },
-  { file: '08_06_01_06_tch.xlsx', label: 'Hombres que realizan labores del hogar o labores de cuidado (15-24 años), (%)', dir: 'desc' },
-  { file: '08_06_01_07_tcm.xlsx', label: 'Mujeres que realizan labores del hogar o labores de cuidado (15-24 años), (%)', dir: 'desc' },
 ];
 
 const INDICATOR_DIR_MAP = {};
@@ -630,7 +610,7 @@ const BOLIVIA_BOUNDS = [[-23.0, -69.7], [-9.6, -57.4]];
 
 const state = {
   level: 'municipal', currentFile: null, indicatorData: null,
-  geoMun: null, geoDep: null, layerLeft: null, layerRight: null,
+  geoMun: null, geoDep: null, layerLeft: null, layerRight: null, layerSlider: null,
   selectedId: null, isSyncing: false,
 };
 
@@ -1092,30 +1072,7 @@ function showCartogramTooltip(event, d, data) {
   dom.tooltip.style.top  = ty + 'px';
 }
 
-function updateSlider(period) {
-  sliderPeriod = period;
-  // Update map layers
-  if (state.indicatorData && state.geoMun) {
-    const data    = state.indicatorData;
-    const mapData = state.level === 'municipal' ? data.mun : data.dep;
-    const geo     = state.level === 'municipal' ? state.geoMun : state.geoDep;
-    if (state.layerLeft) mapLeft.removeLayer(state.layerLeft);
-    function makeSliderLayer(map) {
-      return L.geoJSON(geo, {
-        style: f => featureStyle(f, period === 'v1' ? 'left' : 'right', mapData, data.thresholds),
-        onEachFeature: (feature, layer) => {
-          layer.on({ mouseover: e => onFeatureHover(e, feature, period === 'v1' ? 'left' : 'right'), mouseout: () => hideTooltip(), click: e => onFeatureClick(e, feature) });
-        },
-      }).addTo(map);
-    }
-    state.layerLeft = makeSliderLayer(mapLeft);
-    // Update period label
-    const label = period === 'v1' ? (data.colLabels.v1display || data.colLabels.v1) : (data.colLabels.v2display || data.colLabels.v2);
-    document.getElementById('slider-period-label').textContent = label;
-    // Re-render cartogram
-    renderCartogram(data);
-  }
-}
+
 
 function onFeatureHover(e, feature) {
   e.target.setStyle({ weight: 2, color: '#1d4ed8', fillOpacity: 0.95 });
