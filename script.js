@@ -50,7 +50,7 @@ const ALL_THRESHOLDS = {
   '05_01_01_04_pgp': { meta:{max:1,min:0.8}, proximo:{max:0.8,min:0.7}, retos:{max:0.7,min:0.5}, grandes:{max:0.5,min:0} },
   '05_04_01_01_phc': { meta:{max:4,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
   '05_05_01_05_acm': { meta:{max:100,min:40}, proximo:{max:40,min:30}, retos:{max:30,min:20}, grandes:{max:20,min:0} },
-  '05_07_02_06_ttm': { meta:{max:1,min:0.5}, proximo:{max:0.5,min:0.25}, retos:{max:0.25,min:0.05}, grandes:{max:0.05,min:0} },
+  '05_07_02_06_ttm': { meta:{max:100,min:50}, proximo:{max:50,min:25}, retos:{max:25,min:5}, grandes:{max:5,min:0} },
   '06_01_01_01_cap': { meta:{max:100,min:98}, proximo:{max:98,min:89}, retos:{max:89,min:80}, grandes:{max:80,min:0} },
   '06_02_01_02_cas': { meta:{max:100,min:95}, proximo:{max:95,min:85}, retos:{max:85,min:75}, grandes:{max:75,min:0} },
   '06_03_01_03_tar': { meta:{max:100,min:50}, proximo:{max:50,min:32.5}, retos:{max:32.5,min:15}, grandes:{max:15,min:0} },
@@ -260,7 +260,7 @@ function setViewMode(mode) {
     }
     if (state.indicatorData) {
       renderSliderMap(state.indicatorData, sliderPeriod);
-      renderCartogram(state.indicatorData);
+      setTimeout(() => { renderCartogram(state.indicatorData); }, 120);
       // Update slider labels
       const d = state.indicatorData;
       document.getElementById('slider-label-v1').textContent = d.colLabels.v1display || d.colLabels.v1;
@@ -983,8 +983,9 @@ function renderCartogram(data) {
 
   const period = sliderPeriod;
   const mapData = data.mun;
-  const W = container.clientWidth  || 500;
-  const H = container.clientHeight || 500;
+  const rect = container.getBoundingClientRect();
+  const W = rect.width  || container.clientWidth  || 500;
+  const H = rect.height || container.clientHeight || 500;
 
   container.innerHTML = '';
 
