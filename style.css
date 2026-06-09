@@ -589,7 +589,10 @@ html, body {
   max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   display: inline-block;
 }
-.map-wrapper { flex: 1; position: relative; overflow: hidden; }
+.map-wrapper {
+  flex: 1 1 0; position: relative; overflow: hidden;
+  min-height: 0; display: flex; flex-direction: column;
+}
 
 /* Cartogram divider — simple 1px line */
 .map-divider { width: 1px; flex-shrink: 0; background: var(--border); }
@@ -974,11 +977,11 @@ html, body {
 .cartogram-layout { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .cartogram-panels-row { display: flex; flex: 1; min-height: 0; gap: 0; }
 .cartogram-map-panel {
-  flex: 1; display: flex; flex-direction: column;
-  min-width: 0; border-right: 1px solid var(--border);
+  flex: 1 1 0; display: flex; flex-direction: column;
+  min-width: 0; min-height: 0; border-right: 1px solid var(--border);
 }
 .cartogram-map-panel:last-of-type { border-right: none; }
-.cartogram-canvas { flex: 1; width: 100%; height: 100%; background: var(--bg); }
+.cartogram-canvas { flex: 1; width: 100%; min-height: 0; background: var(--bg); }
 
 /* Cartogram temporal slider — 32px, minimal */
 .temporal-slider-bar {

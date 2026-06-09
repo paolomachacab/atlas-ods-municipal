@@ -964,13 +964,23 @@ function renderCartogram(data) {
   const period = sliderPeriod;
   const mapData = data.mun;
   const rect = container.getBoundingClientRect();
-  const W = rect.width  || container.clientWidth  || 500;
-  const H = rect.height || container.clientHeight || 500;
+  const W = rect.width  || container.clientWidth;
+  const H = rect.height || container.clientHeight;
+
+  // Panel not laid out yet — retry once layout resolves
+  if (!W || !H) {
+    setTimeout(() => renderCartogram(data), 100);
+    return;
+  }
 
   container.innerHTML = '';
 
   const svg = d3.select(container).append('svg')
-    .attr('width', W).attr('height', H)
+    .attr('width',  '100%')
+    .attr('height', '100%')
+    .attr('viewBox', `0 0 ${W} ${H}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('display', 'block')
     .style('background', 'transparent');
 
   cartogramSvg = svg;
