@@ -48,7 +48,7 @@ const ALL_THRESHOLDS = {
   '05_01_01_02_pgm': { meta:{max:999,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
   '05_01_01_03_pge': { meta:{max:2,min:1}, proximo:{max:1,min:0.85}, retos:{max:0.85,min:0.7}, grandes:{max:0.7,min:0} },
   '05_01_01_04_pgp': { meta:{max:1,min:0.8}, proximo:{max:0.8,min:0.7}, retos:{max:0.7,min:0.5}, grandes:{max:0.5,min:0} },
-  '05_04_01_01_phc': { meta:{max:4,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
+  '05_04_01_01_phc': { meta:{max:2,min:1}, proximo:{max:1,min:0.75}, retos:{max:0.75,min:0.5}, grandes:{max:0.5,min:0} },
   '05_05_01_05_acm': { meta:{max:100,min:40}, proximo:{max:40,min:30}, retos:{max:30,min:20}, grandes:{max:20,min:0} },
   '05_07_02_06_ttm': { meta:{max:100,min:50}, proximo:{max:50,min:25}, retos:{max:25,min:5}, grandes:{max:5,min:0} },
   '06_01_01_01_cap': { meta:{max:100,min:98}, proximo:{max:98,min:89}, retos:{max:89,min:80}, grandes:{max:80,min:0} },

@@ -507,27 +507,27 @@ html, body {
   border: 1px solid var(--border); white-space: nowrap;
 }
 
-/* ── View mode toggle — compact icon buttons, floating top-right ── */
+/* ── View mode toggle — pill container, floating top-right ── */
 .view-mode-toggle {
   position: absolute;
   top: 8px; right: 12px; z-index: 20;
-  display: flex; gap: 1px;
-  background: rgba(255,255,255,.96);
+  display: flex; gap: 2px;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 20px;
+  padding: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 .view-mode-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 26px; height: 24px;
-  padding: 0; border-radius: var(--radius-xs);
+  width: 32px; height: 26px;
+  padding: 0; border-radius: 16px;
   border: none; background: transparent;
   color: var(--text-light);
   cursor: pointer; transition: var(--transition);
 }
 .view-mode-btn:hover { color: var(--text-main); background: var(--bg); }
-.view-mode-btn.active { color: var(--blue); background: var(--blue-ghost); }
+.view-mode-btn.active { color: white; background: #1a1a2e; }
 
 /* ── 3D page-flip for mode switching ── */
 .map-area { perspective: 1200px; }
@@ -1098,3 +1098,73 @@ html, body {
   .ids-map-panel { display: none; }
   .ids-table-panel { width: 100%; }
 }
+
+/* ─────────────────────────────────────────────
+   PERIOD PILL TOGGLES (independent per panel)
+───────────────────────────────────────────── */
+.period-pill-bar {
+  display: flex; align-items: center; justify-content: center;
+  height: 34px; flex-shrink: 0;
+  border-top: 1px solid var(--border);
+}
+.period-pill-toggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px; gap: 1px;
+}
+.period-pill-btn {
+  height: 22px; padding: 0 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px; font-weight: 700;
+  border: none; border-radius: 16px;
+  background: transparent; color: var(--text-light);
+  cursor: pointer; transition: var(--transition);
+  white-space: nowrap;
+}
+.period-pill-btn:hover { color: var(--text-main); background: #f3f4f6; }
+.period-pill-btn.active { background: #1a1a2e; color: white; }
+
+/* ─────────────────────────────────────────────
+   CARTOGRAM AESTHETICS
+───────────────────────────────────────────── */
+@keyframes cartogramFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+#cartogram-container svg {
+  animation: cartogramFadeIn 0.3s ease forwards;
+}
+#cartogram-container svg circle {
+  fill-opacity: 0.85;
+  stroke-width: 0.8;
+}
+
+/* ─────────────────────────────────────────────
+   DARK MODE
+───────────────────────────────────────────── */
+[data-theme="dark"] {
+  --navy: #4a9eff;
+  --blue: #60a5fa;
+  --blue-ghost: #1e3a5f;
+  --bg: #0f1117;
+  --surface: #1c1f2e;
+  --border: #2d3348;
+  --text-main: #e4e8f0;
+  --text-muted: #9ba3b8;
+  --text-light: #6b7490;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4);
+}
+
+body,
+.site-header, .sidebar, .map-area,
+.cartogram-layout, .page-wrapper,
+.view-table, .view-convergencia, .view-ids {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="dark"] .period-pill-btn:hover { background: #2d3348; }
+[data-theme="dark"] .view-mode-btn:hover   { background: #2d3348; }
+[data-theme="dark"] .view-mode-btn.active  { background: var(--navy); }

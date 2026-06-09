@@ -64,6 +64,11 @@
         <div class="level-toggle">
           <button class="toggle-btn active" id="btn-municipal">Municipal</button>
         </div>
+        <button class="icon-btn" id="btn-dark-mode" title="Modo oscuro / claro" onclick="toggleDarkMode()">
+          <svg id="dark-mode-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
         <button class="icon-btn" id="btn-fullscreen" title="Pantalla completa">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         </button>
@@ -197,6 +202,12 @@
               <div class="map-wrapper">
                 <div id="map-slider" class="leaflet-map"></div>
               </div>
+              <div class="period-pill-bar">
+                <div class="period-pill-toggle">
+                  <button class="period-pill-btn" id="map-btn-v1" onclick="setMapPeriod('v1')">Inicial</button>
+                  <button class="period-pill-btn active" id="map-btn-v2" onclick="setMapPeriod('v2')">Final</button>
+                </div>
+              </div>
             </div>
             <div class="map-divider"></div>
             <div class="cartogram-map-panel">
@@ -207,20 +218,18 @@
               <div class="map-wrapper" style="overflow:hidden">
                 <div id="cartogram-container" class="cartogram-canvas"></div>
               </div>
-            </div>
-            </div><!-- /cartogram-panels-row -->
-            <!-- SLIDER TEMPORAL -->
-            <div class="temporal-slider-bar" id="temporal-slider-bar">
-              <span class="slider-label-left" id="slider-label-v1">Período Inicial</span>
-              <div class="slider-track-wrap">
-                <input type="range" id="temporal-slider" min="0" max="1" step="1" value="1" class="temporal-slider" />
-                <div class="slider-ticks">
-                  <span>Inicial</span>
-                  <span>Final</span>
+              <div class="period-pill-bar">
+                <div class="period-pill-toggle">
+                  <button class="period-pill-btn" id="cart-btn-v1" onclick="setCartogramPeriod('v1')">Inicial</button>
+                  <button class="period-pill-btn active" id="cart-btn-v2" onclick="setCartogramPeriod('v2')">Final</button>
                 </div>
               </div>
-              <span class="slider-label-right" id="slider-label-v2">Período Final</span>
             </div>
+            </div><!-- /cartogram-panels-row -->
+            <!-- Hidden elements preserved for script.js compatibility -->
+            <input type="range" id="temporal-slider" min="0" max="1" step="1" value="1" style="display:none" />
+            <span id="slider-label-v1" style="display:none"></span>
+            <span id="slider-label-v2" style="display:none"></span>
           </div>
 
           <div id="loading-overlay" class="loading-overlay">
@@ -372,6 +381,23 @@
   <script src="script.js?v=16"></script>
 
   <script>
+  /* ─── Theme: restore from localStorage before first paint ─── */
+  (function () {
+    var saved = localStorage.getItem('atlas-theme');
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+
+  /* ─── Dark tile intercept: swap light_nolabels → dark_nolabels when dark mode active ─── */
+  (function () {
+    var _orig = L.tileLayer;
+    L.tileLayer = function (url, opts) {
+      if (document.documentElement.getAttribute('data-theme') === 'dark') {
+        url = url.replace('light_nolabels', 'dark_nolabels');
+      }
+      return _orig.call(L, url, opts);
+    };
+  })();
+
   /* ─── FIX 1: showView override — debounce + invalidateSize + overlay fix ─── */
   (function () {
     var _lock = false;
@@ -381,7 +407,6 @@
       _lock = true;
       setTimeout(function () { _lock = false; }, 300);
 
-      /* Update nav active state */
       document.querySelectorAll('.nav-btn').forEach(function (b) { b.classList.remove('active'); });
       var btn = document.querySelector('.nav-btn[onclick="showView(\'' + view + '\')"]');
       if (btn) btn.classList.add('active');
@@ -391,7 +416,6 @@
       var isConv  = view === 'convergencia';
       var isIds   = view === 'ids';
 
-      /* Toggle view containers */
       var vMaps  = document.getElementById('view-maps');
       var vTable = document.getElementById('view-table');
       var vConv  = document.getElementById('view-convergencia');
@@ -401,13 +425,11 @@
       if (vConv)  vConv.classList.toggle('hidden', !isConv);
       if (vIds)   vIds.classList.toggle('hidden', !isIds);
 
-      /* Clear stuck loading overlay when leaving maps view */
       if (!isMaps) {
         var ol = document.getElementById('loading-overlay');
         if (ol) ol.classList.add('hidden');
       }
 
-      /* Per-view post-show actions */
       if (isMaps) {
         setTimeout(function () {
           if (typeof mapLeft  !== 'undefined' && mapLeft)  mapLeft.invalidateSize();
@@ -454,22 +476,17 @@
 
       _flipping = true;
 
-      /* Phase 1 — flip current view out */
       outEl.classList.add('mode-flip-out');
 
       setTimeout(function () {
         outEl.classList.remove('mode-flip-out');
-
-        /* Original toggles hidden classes + updates btn states */
         _origSetVM(mode);
 
-        /* Phase 2 — flip new view in (needs two rAFs to catch display change) */
         requestAnimationFrame(function () {
           requestAnimationFrame(function () {
             inEl.classList.add('mode-flip-in');
             setTimeout(function () {
               inEl.classList.remove('mode-flip-in');
-              /* Leaflet resize after animation */
               if (mode === 'cartogram' && typeof mapSlider !== 'undefined' && mapSlider) {
                 mapSlider.invalidateSize();
               } else if (mode === 'dual') {
@@ -484,17 +501,79 @@
     };
   })();
 
-  /* ─── FIX 3: Slider crossfade — capture-phase listener fades map out/in ─── */
-  document.addEventListener('DOMContentLoaded', function () {
-    var slider = document.getElementById('temporal-slider');
-    var mapEl  = document.getElementById('map-slider');
-    if (!slider || !mapEl) return;
+  /* ─── Independent cartogram period ─── */
+  var _cartogramPeriod = 'v2';
+  var _origRenderCartogram = renderCartogram;
+  renderCartogram = function (data) {
+    var saved = sliderPeriod;
+    sliderPeriod = _cartogramPeriod;
+    _origRenderCartogram(data || (typeof state !== 'undefined' ? state.indicatorData : undefined));
+    sliderPeriod = saved;
+  };
 
-    /* Capture phase fires before the original bubble listener in initSlider() */
-    slider.addEventListener('input', function () {
-      mapEl.style.opacity = '0';
-      setTimeout(function () { mapEl.style.opacity = '1'; }, 150);
-    }, true);
+  function setMapPeriod(p) {
+    var b1 = document.getElementById('map-btn-v1');
+    var b2 = document.getElementById('map-btn-v2');
+    if (b1) b1.classList.toggle('active', p === 'v1');
+    if (b2) b2.classList.toggle('active', p === 'v2');
+    var mapEl = document.getElementById('map-slider');
+    if (mapEl) mapEl.style.opacity = '0';
+    sliderPeriod = p;
+    if (typeof state !== 'undefined' && state.indicatorData && typeof renderSliderMap === 'function') {
+      renderSliderMap(state.indicatorData, p);
+    }
+    setTimeout(function () { if (mapEl) mapEl.style.opacity = '1'; }, 150);
+  }
+
+  function setCartogramPeriod(p) {
+    _cartogramPeriod = p;
+    var b1 = document.getElementById('cart-btn-v1');
+    var b2 = document.getElementById('cart-btn-v2');
+    if (b1) b1.classList.toggle('active', p === 'v1');
+    if (b2) b2.classList.toggle('active', p === 'v2');
+    if (typeof renderCartogram === 'function' && typeof state !== 'undefined' && state.indicatorData) {
+      renderCartogram(state.indicatorData);
+    }
+  }
+
+  /* ─── Dark mode toggle ─── */
+  var _TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
+  var _TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
+
+  function _switchTiles(url) {
+    var maps = [];
+    if (typeof mapLeft   !== 'undefined' && mapLeft)   maps.push(mapLeft);
+    if (typeof mapRight  !== 'undefined' && mapRight)  maps.push(mapRight);
+    if (typeof mapSlider !== 'undefined' && mapSlider) maps.push(mapSlider);
+    maps.forEach(function (m) {
+      var old = [];
+      m.eachLayer(function (l) { if (l instanceof L.TileLayer) old.push(l); });
+      old.forEach(function (l) { m.removeLayer(l); });
+      L.tileLayer(url, { attribution: '©OSM ©Carto', subdomains: 'abcd', maxZoom: 19 }).addTo(m);
+    });
+  }
+
+  function toggleDarkMode() {
+    var html    = document.documentElement;
+    var isDark  = html.getAttribute('data-theme') === 'dark';
+    var next    = isDark ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('atlas-theme', next);
+    _switchTiles(isDark ? _TILE_LIGHT : _TILE_DARK);
+    var icon = document.getElementById('dark-mode-icon');
+    if (icon) {
+      icon.innerHTML = isDark
+        ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+        : '<circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+    }
+  }
+
+  /* Update dark mode icon on load if dark was restored from localStorage */
+  document.addEventListener('DOMContentLoaded', function () {
+    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+      var icon = document.getElementById('dark-mode-icon');
+      if (icon) icon.innerHTML = '<circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+    }
   });
   </script>
 
