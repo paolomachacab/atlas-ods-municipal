@@ -23,7 +23,14 @@ def safe_int(val):
 
 path = sys.argv[1]
 wb = openpyxl.load_workbook(path, data_only=True)
-ws = wb["Indices municipales"]
+# Support both accented and non-accented sheet names
+sheet_name = next(
+    (s for s in wb.sheetnames if 'ndices municipales' in s.lower()),
+    None
+)
+if sheet_name is None:
+    raise KeyError(f"No sheet matching 'ndices municipales' found. Available: {wb.sheetnames}")
+ws = wb[sheet_name]
 
 data = {}
 
