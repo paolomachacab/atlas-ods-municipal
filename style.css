@@ -1170,4 +1170,65 @@ body,
 
 [data-theme="dark"] .period-pill-btn:hover { background: #2d3348; }
 [data-theme="dark"] .view-mode-btn:hover   { background: #2d3348; }
+
+/* ── Credit badge ── */
+.credit-badge {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 8px 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  transition: box-shadow .2s ease;
+  text-decoration: none;
+}
+.credit-badge:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.22);
+}
+.credit-icon {
+  color: #374151;
+  flex-shrink: 0;
+}
+.credit-text {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+.credit-divider {
+  display: inline-block;
+  width: 1px;
+  height: 14px;
+  background: #e5e7eb;
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+.credit-link {
+  display: flex;
+  align-items: center;
+  color: #6b7280;
+  transition: color .15s ease;
+  text-decoration: none;
+  line-height: 1;
+}
+.credit-link:hover { color: #374151; }
+
+[data-theme="dark"] .credit-badge {
+  background: #1e2130;
+  box-shadow: 0 2px 8px rgba(0,0,0,.45);
+}
+[data-theme="dark"] .credit-badge:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.55);
+}
+[data-theme="dark"] .credit-icon,
+[data-theme="dark"] .credit-text { color: #e5e7eb; }
+[data-theme="dark"] .credit-divider { background: #374151; }
+[data-theme="dark"] .credit-link { color: #9ca3af; }
+[data-theme="dark"] .credit-link:hover { color: #e5e7eb; }
 [data-theme="dark"] .view-mode-btn.active  { background: var(--navy); }
