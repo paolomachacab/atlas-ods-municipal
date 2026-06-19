@@ -80,6 +80,13 @@
         <button class="icon-btn" id="btn-fullscreen" title="Pantalla completa">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         </button>
+        <button class="icon-btn" id="btn-tutorial" title="Tutorial de uso" onclick="openTutorial()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <circle cx="12" cy="17" r=".5" fill="currentColor"/>
+          </svg>
+        </button>
         <button class="icon-btn" title="Volver al inicio" onclick="document.getElementById('landing-page').classList.remove('hidden');document.getElementById('atlas-app').classList.add('hidden')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         </button>
@@ -360,6 +367,23 @@
 
   <div id="map-tooltip" class="map-tooltip hidden"></div>
 
+  <!-- Tutorial overlay -->
+  <div id="tutorial-overlay" class="tut-overlay" style="display:none" role="dialog" aria-modal="true">
+    <div id="tutorial-highlight" class="tut-highlight"></div>
+    <div id="tutorial-box" class="tut-box">
+      <div class="tut-header-row">
+        <span id="tutorial-counter" class="tut-counter">1 de 6</span>
+        <button class="tut-skip-btn" onclick="closeTutorial()" aria-label="Cerrar tutorial">Salir ×</button>
+      </div>
+      <div id="tutorial-title" class="tut-title"></div>
+      <p id="tutorial-text" class="tut-text"></p>
+      <div class="tut-footer-row">
+        <button id="tutorial-prev" class="tut-nav-btn" onclick="tutorialStep(-1)">← Anterior</button>
+        <button id="tutorial-next" class="tut-nav-btn tut-nav-primary" onclick="tutorialStep(1)">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Credit badge — bottom-left, always visible -->
   <div class="credit-badge" id="credit-badge">
     <svg class="credit-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -409,14 +433,12 @@
     };
   })();
 
-  /* ─── FIX 1: showView override — debounce + invalidateSize + overlay fix ─── */
+  /* ─── FIX 1: showView override — no lock, correct invalidateSize timing ─── */
   (function () {
-    var _lock = false;
+    var _activeView = 'maps';
 
     window.showView = function (view) {
-      if (_lock) return;
-      _lock = true;
-      setTimeout(function () { _lock = false; }, 300);
+      _activeView = view;
 
       document.querySelectorAll('.nav-btn').forEach(function (b) { b.classList.remove('active'); });
       var btn = document.querySelector('.nav-btn[onclick="showView(\'' + view + '\')"]');
@@ -436,32 +458,45 @@
       if (vConv)  vConv.classList.toggle('hidden', !isConv);
       if (vIds)   vIds.classList.toggle('hidden', !isIds);
 
+      /* Always hide loading overlay when leaving map view */
       if (!isMaps) {
         var ol = document.getElementById('loading-overlay');
         if (ol) ol.classList.add('hidden');
       }
 
       if (isMaps) {
-        setTimeout(function () {
-          if (typeof mapLeft  !== 'undefined' && mapLeft)  mapLeft.invalidateSize();
-          if (typeof mapRight !== 'undefined' && mapRight) mapRight.invalidateSize();
-          if (typeof mapSlider !== 'undefined' && mapSlider) mapSlider.invalidateSize();
-        }, 60);
+        /* Call invalidateSize at two offsets: once after layout, once after any CSS transition */
+        [80, 280].forEach(function (delay) {
+          setTimeout(function () {
+            if (_activeView !== 'maps') return;
+            if (typeof mapLeft   !== 'undefined' && mapLeft)   mapLeft.invalidateSize();
+            if (typeof mapRight  !== 'undefined' && mapRight)  mapRight.invalidateSize();
+            if (typeof mapSlider !== 'undefined' && mapSlider) mapSlider.invalidateSize();
+          }, delay);
+        });
       } else if (isTable) {
         if (typeof state !== 'undefined' && state.indicatorData && typeof renderTable === 'function') {
           renderTable(state.indicatorData);
         }
       } else if (isConv) {
+        /* Give the view a frame to become visible before measuring container dimensions */
         setTimeout(function () {
-          if (typeof state !== 'undefined' && state.indicatorData && typeof renderConvergenciaView === 'function') {
-            try { renderConvergenciaView(state.indicatorData); } catch (e) {}
+          if (_activeView !== 'convergencia') return;
+          var container = document.getElementById('conv-scatter-container');
+          if (!container) return;
+          var r = container.getBoundingClientRect();
+          if (typeof state !== 'undefined' && state.indicatorData && typeof renderConvergenciaView === 'function' && r.width > 50 && r.height > 50) {
+            try { renderConvergenciaView(state.indicatorData); } catch (e) { console.warn('[Atlas] convergencia render:', e); }
           }
-        }, 100);
+        }, 80);
       } else if (isIds) {
         if (typeof renderIDSView === 'function') renderIDSView();
-        setTimeout(function () {
-          if (window.idsMapInstance) window.idsMapInstance.invalidateSize();
-        }, 150);
+        [80, 220].forEach(function (delay) {
+          setTimeout(function () {
+            if (_activeView !== 'ids') return;
+            if (window.idsMapInstance) window.idsMapInstance.invalidateSize();
+          }, delay);
+        });
       }
     };
   })();
@@ -571,6 +606,14 @@
     html.setAttribute('data-theme', next);
     localStorage.setItem('atlas-theme', next);
     _switchTiles(isDark ? _TILE_LIGHT : _TILE_DARK);
+    /* Also switch the IDS map tile layer (not covered by _switchTiles) */
+    if (window.idsMapInstance) {
+      var _newTile = isDark ? _TILE_LIGHT : _TILE_DARK;
+      var _oldIDS  = [];
+      window.idsMapInstance.eachLayer(function (l) { if (l instanceof L.TileLayer) _oldIDS.push(l); });
+      _oldIDS.forEach(function (l) { window.idsMapInstance.removeLayer(l); });
+      L.tileLayer(_newTile, { attribution: '©OSM ©Carto', subdomains: 'abcd', maxZoom: 19 }).addTo(window.idsMapInstance);
+    }
     var icon = document.getElementById('dark-mode-icon');
     if (icon) {
       icon.innerHTML = isDark
@@ -588,5 +631,162 @@
   });
   </script>
 
+  <script>
+  /* ─────────────────────────────────────────────────────────
+     TUTORIAL GUIADO · 6 pasos · auto-launch en primera visita
+  ───────────────────────────────────────────────────────── */
+  (function () {
+    var _step  = 0;
+    var _steps = [
+      {
+        sel:   '#indicator-select',
+        pos:   'right',
+        title: '1. Selector de indicador',
+        text:  'Comienza aquí. Elige uno de los más de 60 indicadores ODS disponibles para Bolivia, organizados por Objetivo de Desarrollo Sostenible.'
+      },
+      {
+        sel:   '.dual-maps-row',
+        pos:   'top',
+        title: '2. Mapas comparativos',
+        text:  'Bolivia a nivel municipal en dos períodos: izquierda (~2012) y derecha (~2024). Los colores muestran la clasificación ODS de cada municipio y permiten ver la evolución.'
+      },
+      {
+        sel:   '#legend-container',
+        pos:   'right',
+        title: '3. Clasificación ODS',
+        text:  'Verde = meta alcanzada · Amarillo = próximo · Naranja = retos importantes · Rojo = retos grandes. Cambia la leyenda entre período inicial y final con los botones de arriba.'
+      },
+      {
+        sel:   '#view-mode-toggle',
+        pos:   'bottom',
+        title: '4. Modo cartograma',
+        text:  'Activa el modo cartograma: cada municipio aparece como un círculo cuyo tamaño es proporcional a su población, facilitando la comparación demográfica.'
+      },
+      {
+        sel:   '.nav-btn[onclick*="ids"]',
+        pos:   'bottom',
+        title: '5. Ranking IDS',
+        text:  'La pestaña "Ranking IDS" muestra el Índice Municipal de Desarrollo Sostenible, un índice compuesto que clasifica los municipios por su avance conjunto en los ODS.'
+      },
+      {
+        sel:   '#btn-dark-mode',
+        pos:   'bottom-left',
+        title: '6. Modo oscuro',
+        text:  'Activa el modo oscuro para una experiencia de visualización más cómoda. El ajuste se guarda automáticamente para tu próxima visita. ¡Listo para explorar el Atlas!'
+      }
+    ];
+
+    function _getEl() {
+      var overlay = document.getElementById('tutorial-overlay');
+      var hl      = document.getElementById('tutorial-highlight');
+      var box     = document.getElementById('tutorial-box');
+      return { overlay: overlay, hl: hl, box: box };
+    }
+
+    function _render() {
+      var s   = _steps[_step];
+      var els = _getEl();
+      if (!els.overlay || !els.hl || !els.box) return;
+
+      /* Update text */
+      var ctr   = document.getElementById('tutorial-counter');
+      var title = document.getElementById('tutorial-title');
+      var text  = document.getElementById('tutorial-text');
+      var prev  = document.getElementById('tutorial-prev');
+      var next  = document.getElementById('tutorial-next');
+      if (ctr)   ctr.textContent   = (_step + 1) + ' de ' + _steps.length;
+      if (title) title.textContent = s.title;
+      if (text)  text.textContent  = s.text;
+      if (prev)  prev.style.visibility = _step === 0 ? 'hidden' : 'visible';
+      if (next)  next.textContent  = _step === _steps.length - 1 ? 'Finalizar ✓' : 'Siguiente →';
+
+      /* Locate target element */
+      var target = document.querySelector(s.sel);
+      if (!target) { els.hl.style.display = 'none'; return; }
+      els.hl.style.display = 'block';
+
+      var r   = target.getBoundingClientRect();
+      var pad = 6;
+      els.hl.style.top    = (r.top    - pad) + 'px';
+      els.hl.style.left   = (r.left   - pad) + 'px';
+      els.hl.style.width  = (r.width  + pad * 2) + 'px';
+      els.hl.style.height = (r.height + pad * 2) + 'px';
+
+      /* Position the tutorial box near the target */
+      var bW  = 296 + 2;  /* box width + border */
+      var bH  = 190;      /* approximate box height */
+      var vW  = window.innerWidth;
+      var vH  = window.innerHeight;
+      var gap = 14;
+      var tx, ty;
+      var pos = s.pos || 'right';
+
+      if (pos === 'right') {
+        tx = r.right + gap;
+        ty = r.top + r.height / 2 - bH / 2;
+        if (tx + bW > vW - 8) tx = r.left - bW - gap;
+      } else if (pos === 'bottom') {
+        tx = r.left + r.width / 2 - bW / 2;
+        ty = r.bottom + gap;
+        if (ty + bH > vH - 8) ty = r.top - bH - gap;
+      } else if (pos === 'top') {
+        tx = r.left + r.width / 2 - bW / 2;
+        ty = r.top - bH - gap;
+        if (ty < 8) ty = r.bottom + gap;
+      } else { /* bottom-left */
+        tx = r.right - bW;
+        ty = r.bottom + gap;
+        if (ty + bH > vH - 8) ty = r.top - bH - gap;
+      }
+
+      /* Clamp to viewport */
+      tx = Math.max(8, Math.min(vW - bW - 8, tx));
+      ty = Math.max(8, Math.min(vH - bH - 8, ty));
+
+      els.box.style.left = tx + 'px';
+      els.box.style.top  = ty + 'px';
+    }
+
+    window.openTutorial = function () {
+      /* Always start from the maps view so all steps are reachable */
+      if (typeof showView === 'function') showView('maps');
+      var els = _getEl();
+      if (els.overlay) els.overlay.style.display = 'block';
+      _step = 0;
+      setTimeout(_render, 120);
+    };
+
+    window.closeTutorial = function () {
+      var els = _getEl();
+      if (els.overlay) els.overlay.style.display = 'none';
+      localStorage.setItem('atlas_tutorial_seen', '1');
+    };
+
+    window.tutorialStep = function (dir) {
+      _step += dir;
+      if (_step >= _steps.length) { window.closeTutorial(); return; }
+      if (_step < 0) _step = 0;
+      _render();
+    };
+
+    /* Close when clicking the backdrop (outside the box) */
+    document.addEventListener('click', function (e) {
+      var overlay = document.getElementById('tutorial-overlay');
+      if (!overlay || overlay.style.display === 'none') return;
+      var box = document.getElementById('tutorial-box');
+      if (box && !box.contains(e.target)) window.closeTutorial();
+    });
+
+    /* Auto-launch on first visit — hook into enterAtlasAndLoad */
+    var _origEnterAtlas = window.enterAtlasAndLoad;
+    window.enterAtlasAndLoad = function () {
+      if (typeof _origEnterAtlas === 'function') _origEnterAtlas.apply(this, arguments);
+      if (!localStorage.getItem('atlas_tutorial_seen')) {
+        /* Delay so the first indicator loads before the tutorial runs */
+        setTimeout(window.openTutorial, 1800);
+      }
+    };
+  })();
+  </script>
 </body>
 </html>
