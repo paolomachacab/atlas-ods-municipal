@@ -23,7 +23,7 @@ const ALL_THRESHOLDS = {
   '02_02_02_02_dcn': { meta:{max:0,min:7.5}, proximo:{max:7.5,min:11.3}, retos:{max:11.3,min:15}, grandes:{max:15,min:100} },
   '02_02_02_03_osn': { meta:{max:0,min:3.5}, proximo:{max:3.5,min:7.0}, retos:{max:7.0,min:10.0}, grandes:{max:10.0,min:100} },
   '02_02_03_04_pam': { meta:{max:0,min:18}, proximo:{max:18,min:28}, retos:{max:28,min:38}, grandes:{max:38,min:100} },
-  '02_03_01_05_pac': { meta:{max:999,min:10}, proximo:{max:10,min:2}, retos:{max:2,min:0.00001}, grandes:{max:0,min:0} },
+  '02_03_01_05_pac': { meta:{max:999,min:10}, proximo:{max:10,min:2}, retos:{max:2,min:0.1}, grandes:{max:0.1,min:0} },
   '02_03_01_06_rpa': { meta:{max:999,min:2.5}, proximo:{max:2.5,min:1.7}, retos:{max:1.7,min:1.5}, grandes:{max:1.5,min:0} },
   '02_05_01_07_idp': { meta:{max:1,min:0.65}, proximo:{max:0.65,min:0.4}, retos:{max:0.4,min:0.2}, grandes:{max:0.2,min:0} },
   '03_01_02_01_cpp': { meta:{max:100,min:90}, proximo:{max:90,min:80}, retos:{max:80,min:70}, grandes:{max:70,min:0} },
@@ -1271,32 +1271,33 @@ function renderStats(data) {
   }
   if (!vals1.length && !vals2.length) { dom.statsSection.style.display = 'none'; return; }
 
-  const avg  = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
-  const dir  = getIndicatorDir(data);
-  const avg1 = avg(vals1), avg2 = avg(vals2);
-  const avgDiff = (avg1 !== null && avg2 !== null) ? (avg2 - avg1) : null;
-  const favorable = avgDiff === null ? null : (dir === 'asc' ? avgDiff > 0 : avgDiff < 0);
+  const dir     = getIndicatorDir(data);
+  const bolivia = data.dep ? data.dep.get('11') : null;
+  const nat1    = bolivia ? bolivia.v1 : null;
+  const nat2    = bolivia ? bolivia.v2 : null;
+  const natDiff = (nat1 !== null && nat2 !== null) ? (nat2 - nat1) : null;
+  const favorable  = natDiff === null ? null : (dir === 'asc' ? natDiff > 0 : natDiff < 0);
   const trendClass = favorable === null ? '' : favorable ? 'trend-up' : 'trend-down';
   const trendLabel = favorable === null ? '' : favorable ? 'Tendencia favorable' : 'Tendencia desfavorable';
 
   dom.statsContainer.innerHTML = `
-    ${avgDiff !== null ? `
+    ${natDiff !== null ? `
     <div class="stats-trend ${trendClass}">
       <span class="stats-trend-icon">${favorable ? '▲' : '▼'}</span>
       <span class="stats-trend-label">${trendLabel}</span>
-      <span class="stats-trend-val">${avgDiff > 0 ? '+' : ''}${fmtNum(avgDiff)}</span>
+      <span class="stats-trend-val">${natDiff > 0 ? '+' : ''}${fmtNum(natDiff)}</span>
     </div>` : ''}
     <div class="stats-period-row">
       <div class="stats-period-col stats-period-initial">
         <div class="stats-period-label">Período inicial</div>
-        <div class="stat-card"><div class="stat-value">${fmtNum(avg1)}</div><div class="stat-label">Promedio</div></div>
+        <div class="stat-card"><div class="stat-value">${fmtNum(nat1)}</div><div class="stat-label">Bolivia</div></div>
         <div class="stat-card"><div class="stat-value">${fmtNum(vals1.length ? Math.max(...vals1) : null)}</div><div class="stat-label">Máximo</div></div>
         <div class="stat-card"><div class="stat-value">${fmtNum(vals1.length ? Math.min(...vals1) : null)}</div><div class="stat-label">Mínimo</div></div>
       </div>
       <div class="stats-divider"></div>
       <div class="stats-period-col stats-period-final">
         <div class="stats-period-label">Período final</div>
-        <div class="stat-card"><div class="stat-value">${fmtNum(avg2)}</div><div class="stat-label">Promedio</div></div>
+        <div class="stat-card"><div class="stat-value">${fmtNum(nat2)}</div><div class="stat-label">Bolivia</div></div>
         <div class="stat-card"><div class="stat-value">${fmtNum(vals2.length ? Math.max(...vals2) : null)}</div><div class="stat-label">Máximo</div></div>
         <div class="stat-card"><div class="stat-value">${fmtNum(vals2.length ? Math.min(...vals2) : null)}</div><div class="stat-label">Mínimo</div></div>
       </div>
