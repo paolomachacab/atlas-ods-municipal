@@ -695,8 +695,55 @@ async function ensureMasterDB(silent = false) {
       if (!byCode.has(code)) byCode.set(code, []);
       byCode.get(code).push(row);
     }
-    _masterDB = { byCode };
     console.log(`[Atlas] Master DB cargada: ${byCode.size} indicadores`);
+
+    // Load DEP (departmental + Bolivia national) data from Atlas file
+    let depByCode = new Map();
+    try {
+      const atlasRes = await fetch('Atlas_ODS_2026_DB_preliminar_17062026.xlsx');
+      const atlasBuf = await atlasRes.arrayBuffer();
+      const atlasWb  = XLSX.read(atlasBuf, { type: 'array' });
+      const depSheet = atlasWb.Sheets['Indicadores departamentales'];
+      if (depSheet) {
+        const depRows = XLSX.utils.sheet_to_json(depSheet, { header: 1 });
+        // First non-empty row contains indicator codes at cols 3,5,7,...
+        let codeRowIdx = -1;
+        for (let i = 0; i < depRows.length; i++) {
+          if (depRows[i] && depRows[i].some(v => v !== null && v !== undefined && String(v).trim() !== '')) {
+            codeRowIdx = i; break;
+          }
+        }
+        if (codeRowIdx >= 0) {
+          const codeRow = depRows[codeRowIdx];
+          const indicators = [];
+          for (let c = 3; c < codeRow.length; c += 2) {
+            if (codeRow[c]) indicators.push({ code: String(codeRow[c]).trim(), col: c });
+          }
+          for (const { code: indCode, col } of indicators) {
+            const depMap = new Map();
+            for (let r = codeRowIdx + 3; r < depRows.length; r++) {
+              const row = depRows[r];
+              if (!row || row[1] === null || row[1] === undefined) continue;
+              const id = String(Math.round(Number(row[1]))).trim();
+              const v1 = parseFloat(row[col]);
+              const v2 = parseFloat(row[col + 1]);
+              depMap.set(id, {
+                name: String(row[2] || '').trim() || id,
+                v1: isNaN(v1) ? null : v1,
+                v2: isNaN(v2) ? null : v2,
+                a1: null, a2: null,
+              });
+            }
+            if (depMap.size > 0) depByCode.set(indCode, depMap);
+          }
+          console.log(`[Atlas] DEP DB cargada: ${depByCode.size} indicadores`);
+        }
+      }
+    } catch (e) {
+      console.warn('[Atlas] DEP DB no disponible:', e.message);
+    }
+
+    _masterDB = { byCode, depByCode };
   } catch (e) {
     console.warn('[Atlas] Master DB no disponible:', e.message);
     _masterDB = null;
@@ -728,6 +775,11 @@ function loadFromMasterDB(code) {
       v2: isNaN(v2) ? null : v2,
       a1: null, a2: null,
     });
+  }
+
+  if (_masterDB.depByCode) {
+    const depMap = _masterDB.depByCode.get(code);
+    if (depMap) result.dep = depMap;
   }
 
   if (ALL_THRESHOLDS[code]) result.thresholds = ALL_THRESHOLDS[code];
@@ -844,15 +896,19 @@ async function readExcel(filename, thresholdKey) {
     }
   }
 
-  if (workbook.SheetNames.includes('Indicador_DEP')) {
-    const rows = XLSX.utils.sheet_to_json(workbook.Sheets['Indicador_DEP'], { header: 1 });
+  const depSheetName = workbook.SheetNames.find(s => s.trim() === 'Indicador_DEP');
+  if (depSheetName) {
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[depSheetName], { header: 1 });
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       if (!row[0]) continue;
-      result.dep.set(String(row[0]).trim(), {
-        name: row[1] || String(row[0]),
-        v1: parseFloat(row[2]) || null, v2: parseFloat(row[3]) || null,
-        a1: parseFloat(row[4]) || null, a2: parseFloat(row[5]) || null,
+      const depId = String(Math.round(Number(row[0])) || row[0]).trim();
+      result.dep.set(depId, {
+        name: row[1] || depId,
+        v1: isNaN(parseFloat(row[2])) ? null : parseFloat(row[2]),
+        v2: isNaN(parseFloat(row[3])) ? null : parseFloat(row[3]),
+        a1: isNaN(parseFloat(row[4])) ? null : parseFloat(row[4]),
+        a2: isNaN(parseFloat(row[5])) ? null : parseFloat(row[5]),
       });
     }
   }
