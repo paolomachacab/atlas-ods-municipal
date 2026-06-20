@@ -537,7 +537,7 @@ const INDICATOR_FILES = [
   { file: '09_08_01_02_ci.xlsx', label: 'Cobertura de hogares con acceso a internet fijo o movil (%)', dir: 'asc' },
   { file: '09_08_01_03_drb.xlsx', label: 'Densidad de radio bases', dir: 'asc' },
   { file: '09_08_01_04_tfc.xlsx', label: 'Porcentaje de hogares con cobertura de telefonía fija o celular', dir: 'asc' },
-  { file: '10_02_01_05_gip.xlsx', label: 'Gini del Índice de Pobreza Multidimensional', dir: 'asc' },
+  { file: '10_02_01_05_gip.xlsx', label: 'Gini del Índice de Pobreza Multidimensional', dir: 'desc' },
   { file: '10_02_01_01_esp.xlsx', label: 'Porcentaje de la población que no habla español', dir: 'desc' },
   { file: '10_02_01_02_pel.xlsx', label: 'Paridad de pobreza multidimensional según condición étnica-lingüística', dir: 'asc' },
   { file: '10_02_01_03_mre.xlsx', label: 'Paridad de pobreza multidimensional según condición de migración', dir: 'asc' },
