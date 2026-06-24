@@ -378,15 +378,8 @@
       </div>
     </div>
     <div class="pyr-content">
-      <div class="pyr-panels">
-        <div class="pyr-panel">
-          <div class="pyr-panel-title">Censo 2012</div>
-          <div id="pyr-2012" class="pyr-svg-wrap"></div>
-        </div>
-        <div class="pyr-panel">
-          <div class="pyr-panel-title">Censo 2024</div>
-          <div id="pyr-2024" class="pyr-svg-wrap"></div>
-        </div>
+      <div class="pyr-single-wrap">
+        <div id="pyr-main" class="pyr-svg-wrap"></div>
       </div>
       <div class="pyr-area-row">
         <div class="pyr-area-toggle">
@@ -586,38 +579,42 @@
       var areaData = d[_state.area];
       if (!areaData) return;
 
+      /* Max = total (h+m) per year per age group, both years */
       var maxVal = 1;
       AGE_GROUPS.forEach(function (ag) {
         var row = areaData[ag];
         if (!row) return;
-        maxVal = Math.max(maxVal, row.h2012 || 0, row.m2012 || 0, row.h2024 || 0, row.m2024 || 0);
+        maxVal = Math.max(maxVal,
+          (row.h2012 || 0) + (row.m2012 || 0),
+          (row.h2024 || 0) + (row.m2024 || 0));
       });
 
-      _drawPyramid('pyr-2012', areaData, '2012', maxVal);
-      _drawPyramid('pyr-2024', areaData, '2024', maxVal);
+      _drawComparisonPyramid('pyr-main', areaData, maxVal);
     }
 
-    /* ── Draw a single pyramid ── */
-    function _drawPyramid(containerId, areaData, year, maxVal) {
+    /* ── Draw comparison pyramid: 2012 left · 2024 right ── */
+    function _drawComparisonPyramid(containerId, areaData, maxVal) {
       var container = document.getElementById(containerId);
       if (!container) return;
 
-      var W = Math.max(container.getBoundingClientRect().width, container.clientWidth, 240);
-      var H = Math.max(260, Math.min(480, W * 0.80));
+      var W = Math.max(container.getBoundingClientRect().width, container.clientWidth, 300);
+      var H = Math.max(300, Math.min(500, W * 0.68));
 
-      var margin    = { top: 10, right: 10, bottom: 44, left: 10 };
+      var margin    = { top: 10, right: 14, bottom: 44, left: 14 };
       var innerW    = W - margin.left - margin.right;
       var innerH    = H - margin.top - margin.bottom;
       var midX      = innerW / 2;
-      var labelGap  = 58;
+      var labelGap  = 60;
       var barSpace  = (innerW - labelGap) / 2;
 
-      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      var isDark       = document.documentElement.getAttribute('data-theme') === 'dark';
       var colorGrid    = isDark ? '#2d3348' : '#f0f1f3';
       var colorAxis    = isDark ? '#3a3f52' : '#e5e7eb';
       var colorLabel   = isDark ? '#9ba3b8' : '#6b7280';
       var colorTick    = isDark ? '#6b7490' : '#9ca3af';
       var colorDivider = isDark ? '#4b5563' : '#d1d5db';
+      var color2012    = isDark ? '#7c9fc0' : '#94a3b8';
+      var color2024    = '#3b82f6';
 
       var xScale = d3.scaleLinear()
         .domain([0, maxVal])
@@ -650,43 +647,41 @@
           .attr('stroke', colorGrid).attr('stroke-width', 1);
       });
 
-      /* Men bars — extend LEFT from center gap */
-      g.selectAll('.bh')
+      /* 2012 bars — LEFT */
+      g.selectAll('.b12')
         .data(AGE_GROUPS).enter().append('rect')
           .attr('x', function (ag) {
             var row = areaData[ag] || {};
-            var v   = year === '2012' ? (row.h2012 || 0) : (row.h2024 || 0);
+            var v = (row.h2012 || 0) + (row.m2012 || 0);
             return midX - labelGap / 2 - xScale(v);
           })
           .attr('y',      function (ag) { return yScale(ag); })
           .attr('width',  function (ag) {
             var row = areaData[ag] || {};
-            var v   = year === '2012' ? (row.h2012 || 0) : (row.h2024 || 0);
-            return xScale(v);
+            return xScale((row.h2012 || 0) + (row.m2012 || 0));
           })
           .attr('height', bandH)
-          .attr('fill', '#3b82f6').attr('rx', 2).attr('opacity', 0.88)
+          .attr('fill', color2012).attr('rx', 2).attr('opacity', 0.85)
           .on('mousemove', function (event, ag) {
             var row = areaData[ag] || {};
-            _showTip(event, ag, 'Hombres', year, year === '2012' ? (row.h2012 || 0) : (row.h2024 || 0));
+            _showTip(event, ag, 'Censo 2012', (row.h2012 || 0) + (row.m2012 || 0));
           })
           .on('mouseleave', _hideTip);
 
-      /* Women bars — extend RIGHT from center gap */
-      g.selectAll('.bm')
+      /* 2024 bars — RIGHT */
+      g.selectAll('.b24')
         .data(AGE_GROUPS).enter().append('rect')
           .attr('x', midX + labelGap / 2)
           .attr('y',      function (ag) { return yScale(ag); })
           .attr('width',  function (ag) {
             var row = areaData[ag] || {};
-            var v   = year === '2012' ? (row.m2012 || 0) : (row.m2024 || 0);
-            return xScale(v);
+            return xScale((row.h2024 || 0) + (row.m2024 || 0));
           })
           .attr('height', bandH)
-          .attr('fill', '#f472b6').attr('rx', 2).attr('opacity', 0.88)
+          .attr('fill', color2024).attr('rx', 2).attr('opacity', 0.88)
           .on('mousemove', function (event, ag) {
             var row = areaData[ag] || {};
-            _showTip(event, ag, 'Mujeres', year, year === '2012' ? (row.m2012 || 0) : (row.m2024 || 0));
+            _showTip(event, ag, 'Censo 2024', (row.h2024 || 0) + (row.m2024 || 0));
           })
           .on('mouseleave', _hideTip);
 
@@ -731,26 +726,26 @@
 
       /* Legend */
       var ly  = innerH + 32;
-      var l1x = midX - 68;
-      var l2x = midX + 12;
+      var l1x = midX - 78;
+      var l2x = midX + 16;
       g.append('rect').attr('x', l1x).attr('y', ly - 7).attr('width', 9).attr('height', 9)
-        .attr('fill', '#3b82f6').attr('opacity', 0.88).attr('rx', 2);
+        .attr('fill', color2012).attr('opacity', 0.85).attr('rx', 2);
       g.append('text').attr('x', l1x + 12).attr('y', ly).attr('dy', '0.1em')
         .attr('fill', colorLabel).style('font-size', '10px').style('font-family', 'Nunito, sans-serif')
-        .text('Hombres');
+        .text('Censo 2012');
       g.append('rect').attr('x', l2x).attr('y', ly - 7).attr('width', 9).attr('height', 9)
-        .attr('fill', '#f472b6').attr('opacity', 0.88).attr('rx', 2);
+        .attr('fill', color2024).attr('opacity', 0.88).attr('rx', 2);
       g.append('text').attr('x', l2x + 12).attr('y', ly).attr('dy', '0.1em')
         .attr('fill', colorLabel).style('font-size', '10px').style('font-family', 'Nunito, sans-serif')
-        .text('Mujeres');
+        .text('Censo 2024');
     }
 
     /* ── Tooltip ── */
-    function _showTip(event, ag, sex, year, val) {
+    function _showTip(event, ag, label, val) {
       var el = document.getElementById('pyr-tooltip');
       if (!el) return;
-      el.innerHTML = '<strong>' + _esc(ag) + '</strong>&nbsp;&nbsp;' + sex +
-        '<br>Censo ' + year + ':&nbsp;<strong>' + _fmtFull(val) + '</strong> hab.';
+      el.innerHTML = '<strong>' + _esc(ag) + '</strong>&nbsp;&nbsp;' + label +
+        '<br>Total: <strong>' + _fmtFull(val) + '</strong> hab.';
       el.style.display = 'block';
       el.style.left = (event.clientX + 16) + 'px';
       el.style.top  = (event.clientY - 52) + 'px';
