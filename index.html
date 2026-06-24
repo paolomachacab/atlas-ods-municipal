@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <!-- Google Analytics -->
@@ -20,6 +20,7 @@
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
   <script src="population_data.js"></script>
   <script src="ids.js"></script>
+  <script src="population_pyramid.js"></script>
 </head>
 <body>
 
@@ -66,6 +67,7 @@
           <button class="nav-btn" onclick="showView('table')">Tabla de datos</button>
           <button class="nav-btn" onclick="showView('convergencia')">β-Convergencia</button>
           <button class="nav-btn" onclick="showView('ids')">Ranking IDS</button>
+          <button class="nav-btn" onclick="showView('pyramids')">Pirámides</button>
         </nav>
       </div>
       <div class="header-right">
@@ -362,10 +364,46 @@
     </div>
   </div>
 
+  <!-- ══════ VIEW: PIRÁMIDES ══════ -->
+  <div id="view-pyramids" class="view-pyramids hidden">
+    <div class="pyr-toolbar">
+      <div class="pyr-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pyr-search-icon"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="pyr-search" placeholder="Buscar municipio… ej. Sucre, La Paz" autocomplete="off" spellcheck="false" />
+        <div id="pyr-search-results" class="pyr-search-results hidden"></div>
+      </div>
+      <div class="pyr-mun-header">
+        <span id="pyr-mun-name" class="pyr-mun-name">—</span>
+        <span id="pyr-mun-dept" class="pyr-mun-dept"></span>
+      </div>
+    </div>
+    <div class="pyr-content">
+      <div class="pyr-panels">
+        <div class="pyr-panel">
+          <div class="pyr-panel-title">Censo 2012</div>
+          <div id="pyr-2012" class="pyr-svg-wrap"></div>
+        </div>
+        <div class="pyr-panel">
+          <div class="pyr-panel-title">Censo 2024</div>
+          <div id="pyr-2024" class="pyr-svg-wrap"></div>
+        </div>
+      </div>
+      <div class="pyr-area-row">
+        <div class="pyr-area-toggle">
+          <button class="pyr-area-btn active" data-area="total">Total</button>
+          <button class="pyr-area-btn" data-area="urbana">Urbana</button>
+          <button class="pyr-area-btn" data-area="rural">Rural</button>
+        </div>
+      </div>
+      <div class="pyr-source">Fuente: INE Bolivia, Censo de Población y Vivienda 2024</div>
+    </div>
+  </div>
+
     </div><!-- /atlas-app -->
 
 
   <div id="map-tooltip" class="map-tooltip hidden"></div>
+  <div id="pyr-tooltip" class="pyr-tooltip"></div>
 
   <!-- Tutorial overlay -->
   <div id="tutorial-overlay" class="tut-overlay" style="display:none" role="dialog" aria-modal="true">
@@ -415,6 +453,330 @@
 
   <script src="script.js?v=21"></script>
 
+  <!-- ══════ PYRAMID RENDERING ══════ -->
+  <script>
+  /* ─────────────────────────────────────────────────────────
+     PIRÁMIDES POBLACIONALES · INE Bolivia Censo 2024
+     Self-contained — calls window.renderPyramidView()
+  ───────────────────────────────────────────────────────── */
+  (function () {
+    'use strict';
+
+    var AGE_GROUPS = ['0 a 5', '6 a 11', '12 a 17', '18 a 28', '29 a 39', '40 a 59', '60 o más'];
+
+    var _state = { mun: null, area: 'total' };
+    var _initialized = false;
+    var _resizeTimer = null;
+
+    /* ── Public entry point ── */
+    window.renderPyramidView = function () {
+      if (!_initialized) { _init(); _initialized = true; }
+      if (!_state.mun) {
+        var mapMun = _getMapSelectedMun();
+        if (mapMun) {
+          _selectMun(mapMun);
+        } else {
+          var keys = Object.keys(POPULATION_PYRAMID).sort();
+          if (keys.length) _selectMun(keys[0]);
+        }
+      } else {
+        _redraw();
+      }
+    };
+
+    /* ── One-time setup ── */
+    function _init() {
+      var inp     = document.getElementById('pyr-search');
+      var results = document.getElementById('pyr-search-results');
+
+      if (inp) {
+        inp.addEventListener('input', function () { _handleSearch(this.value.trim()); });
+        inp.addEventListener('focus', function () { if (this.value.trim()) _handleSearch(this.value.trim()); });
+        inp.addEventListener('blur', function () {
+          setTimeout(function () { if (results) results.classList.add('hidden'); }, 200);
+        });
+        inp.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') { if (results) results.classList.add('hidden'); this.blur(); }
+        });
+      }
+
+      document.querySelectorAll('.pyr-area-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.pyr-area-btn').forEach(function (b) { b.classList.remove('active'); });
+          this.classList.add('active');
+          _state.area = this.getAttribute('data-area');
+          _redraw();
+        });
+      });
+
+      window.addEventListener('resize', function () {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(function () {
+          if (_state.mun) _redraw();
+        }, 160);
+      });
+    }
+
+    /* ── Read selected municipality from Maps view ── */
+    function _getMapSelectedMun() {
+      var sec = document.getElementById('mun-info-section');
+      if (sec && sec.style.display !== 'none') {
+        var el = sec.querySelector('.mun-card-name');
+        if (el) {
+          var n = el.textContent.trim();
+          if (n && POPULATION_PYRAMID[n]) return n;
+        }
+      }
+      var inp = document.getElementById('municipality-search');
+      if (inp && inp.value.trim() && POPULATION_PYRAMID[inp.value.trim()]) return inp.value.trim();
+      return null;
+    }
+
+    /* ── Search dropdown ── */
+    function _handleSearch(q) {
+      var results = document.getElementById('pyr-search-results');
+      if (!results) return;
+      if (!q) { results.classList.add('hidden'); return; }
+      var norm = function (s) {
+        return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      };
+      var lower = norm(q);
+      var matches = Object.keys(POPULATION_PYRAMID).filter(function (k) {
+        return norm(k).indexOf(lower) !== -1 ||
+               norm(POPULATION_PYRAMID[k].departamento).indexOf(lower) !== -1;
+      }).sort().slice(0, 12);
+      if (!matches.length) { results.classList.add('hidden'); return; }
+      results.innerHTML = matches.map(function (k) {
+        return '<div class="pyr-search-item" data-mun="' + _esc(k) + '">' +
+          '<span class="pyr-search-name">' + _esc(k) + '</span>' +
+          '<span class="pyr-search-dept">' + _esc(POPULATION_PYRAMID[k].departamento) + '</span>' +
+        '</div>';
+      }).join('');
+      results.classList.remove('hidden');
+      results.querySelectorAll('.pyr-search-item').forEach(function (item) {
+        item.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          var mun = this.getAttribute('data-mun');
+          _selectMun(mun);
+          var inp = document.getElementById('pyr-search');
+          if (inp) inp.value = mun;
+          results.classList.add('hidden');
+        });
+      });
+    }
+
+    /* ── Select and render a municipality ── */
+    function _selectMun(name) {
+      _state.mun = name;
+      var inp = document.getElementById('pyr-search');
+      if (inp && inp.value !== name) inp.value = name;
+      var nameEl = document.getElementById('pyr-mun-name');
+      var deptEl = document.getElementById('pyr-mun-dept');
+      var d = POPULATION_PYRAMID[name];
+      if (nameEl) nameEl.textContent = name;
+      if (deptEl && d) deptEl.textContent = d.departamento;
+      _redraw();
+    }
+
+    /* ── Redraw both pyramids ── */
+    function _redraw() {
+      if (!_state.mun) return;
+      var d = POPULATION_PYRAMID[_state.mun];
+      if (!d) return;
+      var areaData = d[_state.area];
+      if (!areaData) return;
+
+      var maxVal = 1;
+      AGE_GROUPS.forEach(function (ag) {
+        var row = areaData[ag];
+        if (!row) return;
+        maxVal = Math.max(maxVal, row.h2012 || 0, row.m2012 || 0, row.h2024 || 0, row.m2024 || 0);
+      });
+
+      _drawPyramid('pyr-2012', areaData, '2012', maxVal);
+      _drawPyramid('pyr-2024', areaData, '2024', maxVal);
+    }
+
+    /* ── Draw a single pyramid ── */
+    function _drawPyramid(containerId, areaData, year, maxVal) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+
+      var W = Math.max(container.getBoundingClientRect().width, container.clientWidth, 240);
+      var H = Math.max(260, Math.min(480, W * 0.80));
+
+      var margin    = { top: 10, right: 10, bottom: 44, left: 10 };
+      var innerW    = W - margin.left - margin.right;
+      var innerH    = H - margin.top - margin.bottom;
+      var midX      = innerW / 2;
+      var labelGap  = 58;
+      var barSpace  = (innerW - labelGap) / 2;
+
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      var colorGrid    = isDark ? '#2d3348' : '#f0f1f3';
+      var colorAxis    = isDark ? '#3a3f52' : '#e5e7eb';
+      var colorLabel   = isDark ? '#9ba3b8' : '#6b7280';
+      var colorTick    = isDark ? '#6b7490' : '#9ca3af';
+      var colorDivider = isDark ? '#4b5563' : '#d1d5db';
+
+      var xScale = d3.scaleLinear()
+        .domain([0, maxVal])
+        .range([0, barSpace])
+        .nice();
+
+      var yScale = d3.scaleBand()
+        .domain(AGE_GROUPS)
+        .range([innerH, 0])
+        .padding(0.13);
+
+      var bandH = yScale.bandwidth();
+
+      container.innerHTML = '';
+
+      var svg = d3.select(container).append('svg')
+        .attr('width', W).attr('height', H);
+
+      var g = svg.append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      /* Gridlines */
+      xScale.ticks(4).forEach(function (t) {
+        if (t === 0) return;
+        var lx = midX - labelGap / 2 - xScale(t);
+        var rx = midX + labelGap / 2 + xScale(t);
+        g.append('line').attr('x1', lx).attr('x2', lx).attr('y1', 0).attr('y2', innerH)
+          .attr('stroke', colorGrid).attr('stroke-width', 1);
+        g.append('line').attr('x1', rx).attr('x2', rx).attr('y1', 0).attr('y2', innerH)
+          .attr('stroke', colorGrid).attr('stroke-width', 1);
+      });
+
+      /* Men bars — extend LEFT from center gap */
+      g.selectAll('.bh')
+        .data(AGE_GROUPS).enter().append('rect')
+          .attr('x', function (ag) {
+            var row = areaData[ag] || {};
+            var v   = year === '2012' ? (row.h2012 || 0) : (row.h2024 || 0);
+            return midX - labelGap / 2 - xScale(v);
+          })
+          .attr('y',      function (ag) { return yScale(ag); })
+          .attr('width',  function (ag) {
+            var row = areaData[ag] || {};
+            var v   = year === '2012' ? (row.h2012 || 0) : (row.h2024 || 0);
+            return xScale(v);
+          })
+          .attr('height', bandH)
+          .attr('fill', '#3b82f6').attr('rx', 2).attr('opacity', 0.88)
+          .on('mousemove', function (event, ag) {
+            var row = areaData[ag] || {};
+            _showTip(event, ag, 'Hombres', year, year === '2012' ? (row.h2012 || 0) : (row.h2024 || 0));
+          })
+          .on('mouseleave', _hideTip);
+
+      /* Women bars — extend RIGHT from center gap */
+      g.selectAll('.bm')
+        .data(AGE_GROUPS).enter().append('rect')
+          .attr('x', midX + labelGap / 2)
+          .attr('y',      function (ag) { return yScale(ag); })
+          .attr('width',  function (ag) {
+            var row = areaData[ag] || {};
+            var v   = year === '2012' ? (row.m2012 || 0) : (row.m2024 || 0);
+            return xScale(v);
+          })
+          .attr('height', bandH)
+          .attr('fill', '#f472b6').attr('rx', 2).attr('opacity', 0.88)
+          .on('mousemove', function (event, ag) {
+            var row = areaData[ag] || {};
+            _showTip(event, ag, 'Mujeres', year, year === '2012' ? (row.m2012 || 0) : (row.m2024 || 0));
+          })
+          .on('mouseleave', _hideTip);
+
+      /* Center divider */
+      g.append('line')
+        .attr('x1', midX).attr('x2', midX)
+        .attr('y1', 0).attr('y2', innerH)
+        .attr('stroke', colorDivider).attr('stroke-width', 1);
+
+      /* Age group labels in center */
+      AGE_GROUPS.forEach(function (ag) {
+        g.append('text')
+          .attr('x', midX)
+          .attr('y', yScale(ag) + bandH / 2)
+          .attr('dy', '0.35em')
+          .attr('text-anchor', 'middle')
+          .attr('fill', colorLabel)
+          .style('font-size', '9.5px')
+          .style('font-family', 'Nunito, sans-serif')
+          .style('font-weight', '700')
+          .style('pointer-events', 'none')
+          .text(ag);
+      });
+
+      /* X axis baseline */
+      var axG = g.append('g').attr('transform', 'translate(0,' + innerH + ')');
+      axG.append('line').attr('x1', 0).attr('x2', innerW)
+        .attr('stroke', colorAxis).attr('stroke-width', 1);
+
+      /* Tick labels */
+      xScale.ticks(4).forEach(function (t) {
+        if (t === 0) return;
+        var lx = midX - labelGap / 2 - xScale(t);
+        var rx = midX + labelGap / 2 + xScale(t);
+        axG.append('text').attr('x', lx).attr('y', 13).attr('text-anchor', 'middle')
+          .attr('fill', colorTick).style('font-size', '9px').style('font-family', 'DM Mono, monospace')
+          .text(_fmtN(t));
+        axG.append('text').attr('x', rx).attr('y', 13).attr('text-anchor', 'middle')
+          .attr('fill', colorTick).style('font-size', '9px').style('font-family', 'DM Mono, monospace')
+          .text(_fmtN(t));
+      });
+
+      /* Legend */
+      var ly  = innerH + 32;
+      var l1x = midX - 68;
+      var l2x = midX + 12;
+      g.append('rect').attr('x', l1x).attr('y', ly - 7).attr('width', 9).attr('height', 9)
+        .attr('fill', '#3b82f6').attr('opacity', 0.88).attr('rx', 2);
+      g.append('text').attr('x', l1x + 12).attr('y', ly).attr('dy', '0.1em')
+        .attr('fill', colorLabel).style('font-size', '10px').style('font-family', 'Nunito, sans-serif')
+        .text('Hombres');
+      g.append('rect').attr('x', l2x).attr('y', ly - 7).attr('width', 9).attr('height', 9)
+        .attr('fill', '#f472b6').attr('opacity', 0.88).attr('rx', 2);
+      g.append('text').attr('x', l2x + 12).attr('y', ly).attr('dy', '0.1em')
+        .attr('fill', colorLabel).style('font-size', '10px').style('font-family', 'Nunito, sans-serif')
+        .text('Mujeres');
+    }
+
+    /* ── Tooltip ── */
+    function _showTip(event, ag, sex, year, val) {
+      var el = document.getElementById('pyr-tooltip');
+      if (!el) return;
+      el.innerHTML = '<strong>' + _esc(ag) + '</strong>&nbsp;&nbsp;' + sex +
+        '<br>Censo ' + year + ':&nbsp;<strong>' + _fmtFull(val) + '</strong> hab.';
+      el.style.display = 'block';
+      el.style.left = (event.clientX + 16) + 'px';
+      el.style.top  = (event.clientY - 52) + 'px';
+    }
+    function _hideTip() {
+      var el = document.getElementById('pyr-tooltip');
+      if (el) el.style.display = 'none';
+    }
+
+    /* ── Formatters ── */
+    function _fmtN(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
+      if (n >= 10000)   return Math.round(n / 1000) + 'k';
+      if (n >= 1000)    return (n / 1000).toFixed(1).replace('.0', '') + 'k';
+      return String(n);
+    }
+    function _fmtFull(n) {
+      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+    function _esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+  })();
+  </script>
+
   <script>
   /* ─── Theme: restore from localStorage before first paint ─── */
   (function () {
@@ -444,19 +806,22 @@
       var btn = document.querySelector('.nav-btn[onclick="showView(\'' + view + '\')"]');
       if (btn) btn.classList.add('active');
 
-      var isMaps  = view === 'maps';
-      var isTable = view === 'table';
-      var isConv  = view === 'convergencia';
-      var isIds   = view === 'ids';
+      var isMaps     = view === 'maps';
+      var isTable    = view === 'table';
+      var isConv     = view === 'convergencia';
+      var isIds      = view === 'ids';
+      var isPyramids = view === 'pyramids';
 
-      var vMaps  = document.getElementById('view-maps');
-      var vTable = document.getElementById('view-table');
-      var vConv  = document.getElementById('view-convergencia');
-      var vIds   = document.getElementById('view-ids');
-      if (vMaps)  vMaps.classList.toggle('hidden', !isMaps);
-      if (vTable) vTable.classList.toggle('hidden', !isTable);
-      if (vConv)  vConv.classList.toggle('hidden', !isConv);
-      if (vIds)   vIds.classList.toggle('hidden', !isIds);
+      var vMaps     = document.getElementById('view-maps');
+      var vTable    = document.getElementById('view-table');
+      var vConv     = document.getElementById('view-convergencia');
+      var vIds      = document.getElementById('view-ids');
+      var vPyramids = document.getElementById('view-pyramids');
+      if (vMaps)     vMaps.classList.toggle('hidden', !isMaps);
+      if (vTable)    vTable.classList.toggle('hidden', !isTable);
+      if (vConv)     vConv.classList.toggle('hidden', !isConv);
+      if (vIds)      vIds.classList.toggle('hidden', !isIds);
+      if (vPyramids) vPyramids.classList.toggle('hidden', !isPyramids);
 
       /* Always hide loading overlay when leaving map view */
       if (!isMaps) {
@@ -497,6 +862,11 @@
             if (window.idsMapInstance) window.idsMapInstance.invalidateSize();
           }, delay);
         });
+      } else if (isPyramids) {
+        setTimeout(function () {
+          if (_activeView !== 'pyramids') return;
+          if (typeof renderPyramidView === 'function') renderPyramidView();
+        }, 60);
       }
     };
   })();
@@ -790,3 +1160,4 @@
   </script>
 </body>
 </html>
+

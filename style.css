@@ -1165,7 +1165,7 @@ html, body {
 body,
 .site-header, .sidebar, .map-area,
 .cartogram-layout, .page-wrapper,
-.view-table, .view-convergencia, .view-ids {
+.view-table, .view-convergencia, .view-ids, .view-pyramids {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -1365,4 +1365,205 @@ body,
 [data-theme="dark"] .tut-nav-btn   { background: #1c1f2e; color: var(--text-main); border-color: var(--border); }
 [data-theme="dark"] .tut-nav-btn:hover  { background: #2d3348; }
 [data-theme="dark"] .tut-nav-primary    { background: var(--blue); color: #0f1117; border-color: var(--blue); }
+
+/* ═══════════════════════════════════════════════════════════════
+   VIEW: PIRÁMIDES POBLACIONALES
+   ═══════════════════════════════════════════════════════════════ */
+
+.view-pyramids {
+  margin-top: var(--header-h);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-h));
+  overflow-y: auto;
+  background: var(--bg);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.view-pyramids.hidden { display: none; }
+
+/* ── Toolbar ── */
+.pyr-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ── Search ── */
+.pyr-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pyr-search-icon {
+  position: absolute;
+  left: 9px;
+  color: var(--text-light);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+#pyr-search {
+  padding: 6px 10px 6px 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-main);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12.5px;
+  width: 260px;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+#pyr-search::placeholder { color: var(--text-light); }
+#pyr-search:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,92,168,.12);
+}
+
+.pyr-search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  min-width: 270px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 400;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.pyr-search-results.hidden { display: none; }
+.pyr-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-soft);
+  transition: background var(--transition);
+}
+.pyr-search-item:last-child { border-bottom: none; }
+.pyr-search-item:hover { background: var(--blue-ghost); }
+.pyr-search-name { font-size: 12.5px; font-weight: 600; color: var(--text-main); }
+.pyr-search-dept { font-size: 11px; color: var(--text-muted); margin-left: 8px; }
+
+/* ── Municipality label ── */
+.pyr-mun-header { display: flex; align-items: baseline; gap: 8px; }
+.pyr-mun-name   { font-size: 15px; font-weight: 800; color: var(--navy); }
+.pyr-mun-dept   { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+/* ── Main content area ── */
+.pyr-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 20px 24px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+/* ── Two-pyramid row ── */
+.pyr-panels {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  max-width: 1080px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.pyr-panel {
+  flex: 1;
+  min-width: 280px;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pyr-panel-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+}
+.pyr-svg-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  width: 100%;
+}
+
+/* ── Area toggle (secondary, understated) ── */
+.pyr-area-row { display: flex; justify-content: center; }
+.pyr-area-toggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+}
+.pyr-area-btn {
+  padding: 4px 15px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.pyr-area-btn.active {
+  background: var(--surface);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+}
+.pyr-area-btn:hover:not(.active) { color: var(--text-main); }
+
+/* ── Source note ── */
+.pyr-source {
+  font-size: 10.5px;
+  color: var(--text-light);
+  font-family: 'DM Mono', monospace;
+  text-align: center;
+}
+
+/* ── Tooltip ── */
+.pyr-tooltip {
+  position: fixed;
+  z-index: 8000;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  color: var(--text-main);
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+  line-height: 1.55;
+  white-space: nowrap;
+  display: none;
+}
+
+/* ── Fullscreen ── */
+:fullscreen .view-pyramids,
+:-webkit-full-screen .view-pyramids,
+:-moz-full-screen .view-pyramids { margin-top: 0 !important; height: 100vh !important; }
+
+/* ── Dark mode ── */
+[data-theme="dark"] .pyr-search-item:hover { background: var(--blue-ghost); }
+[data-theme="dark"] .pyr-area-btn.active   { background: #1c1f2e; }
+[data-theme="dark"] #pyr-search:focus      { box-shadow: 0 0 0 3px rgba(96,165,250,.15); }
 [data-theme="dark"] .tut-nav-primary:hover { background: #93c5fd; border-color: #93c5fd; }
