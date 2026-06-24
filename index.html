@@ -46,30 +46,6 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         Explorar el Atlas
       </button>
-
-      <!-- ══════ BINGO ══════ -->
-      <div class="landing-bingo">
-        <div class="bingo-winner" id="bingo-winner">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-          ¡BINGO! Has completado una línea
-        </div>
-        <div class="bingo-heading">ATLAS 2026</div>
-        <p class="bingo-subtitle">Marca las casillas que se mencionen durante la presentación</p>
-        <div class="bingo-controls">
-          <button class="bingo-btn" onclick="bingoNewCard()">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.72"/></svg>
-            Nueva tarjeta
-          </button>
-          <button class="bingo-btn bingo-btn-check" onclick="bingoVerify()">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-            Verificar bingo
-          </button>
-        </div>
-        <div class="bingo-col-headers">
-          <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
-        </div>
-        <div class="bingo-grid" id="bingo-grid"></div>
-      </div>
     </div>
   </div>
 
@@ -92,6 +68,7 @@
           <button class="nav-btn" onclick="showView('convergencia')">β-Convergencia</button>
           <button class="nav-btn" onclick="showView('ids')">Ranking IDS</button>
           <button class="nav-btn" onclick="showView('pyramids')">Pirámides</button>
+          <button class="nav-btn" onclick="showView('bingo')">Bingo</button>
         </nav>
       </div>
       <div class="header-right">
@@ -413,6 +390,32 @@
         </div>
       </div>
       <div class="pyr-source">Fuente: INE Bolivia, Censo de Población y Vivienda 2024</div>
+    </div>
+  </div>
+
+  <!-- ══════ VIEW: BINGO ══════ -->
+  <div id="view-bingo" class="view-bingo hidden">
+    <div class="bingo-inner">
+      <div class="bingo-winner" id="bingo-winner">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        ¡BINGO! Has completado una línea
+      </div>
+      <div class="bingo-heading">ATLAS 2026</div>
+      <p class="bingo-subtitle">Marca las casillas que se mencionen durante la presentación</p>
+      <div class="bingo-controls">
+        <button class="bingo-btn" onclick="bingoNewCard()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.72"/></svg>
+          Nueva tarjeta
+        </button>
+        <button class="bingo-btn bingo-btn-check" onclick="bingoVerify()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          Verificar bingo
+        </button>
+      </div>
+      <div class="bingo-col-headers">
+        <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
+      </div>
+      <div class="bingo-grid" id="bingo-grid"></div>
     </div>
   </div>
 
@@ -830,17 +833,20 @@
       var isConv     = view === 'convergencia';
       var isIds      = view === 'ids';
       var isPyramids = view === 'pyramids';
+      var isBingo    = view === 'bingo';
 
       var vMaps     = document.getElementById('view-maps');
       var vTable    = document.getElementById('view-table');
       var vConv     = document.getElementById('view-convergencia');
       var vIds      = document.getElementById('view-ids');
       var vPyramids = document.getElementById('view-pyramids');
+      var vBingo    = document.getElementById('view-bingo');
       if (vMaps)     vMaps.classList.toggle('hidden', !isMaps);
       if (vTable)    vTable.classList.toggle('hidden', !isTable);
       if (vConv)     vConv.classList.toggle('hidden', !isConv);
       if (vIds)      vIds.classList.toggle('hidden', !isIds);
       if (vPyramids) vPyramids.classList.toggle('hidden', !isPyramids);
+      if (vBingo)    vBingo.classList.toggle('hidden', !isBingo);
 
       /* Always hide loading overlay when leaving map view */
       if (!isMaps) {
@@ -886,6 +892,8 @@
           if (_activeView !== 'pyramids') return;
           if (typeof renderPyramidView === 'function') renderPyramidView();
         }, 60);
+      } else if (isBingo) {
+        /* grid is initialized on page load; don't reshuffle on tab switch */
       }
     };
   })();
