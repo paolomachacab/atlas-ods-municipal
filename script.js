@@ -94,7 +94,7 @@ const ALL_THRESHOLDS = {
   '16_06_01_02_cep': { meta:{max:100,min:90}, proximo:{max:90,min:80}, retos:{max:80,min:60}, grandes:{max:60,min:0} },
   '16_07_02_03_tcs': { meta:{max:0,min:0}, proximo:{max:0,min:5}, retos:{max:5,min:10}, grandes:{max:10,min:1000} },
   '16_09_01_04_nic': { meta:{max:100,min:98}, proximo:{max:98,min:86.5}, retos:{max:86.5,min:75}, grandes:{max:75,min:0} },
-  '17_01_02_01_iil': { meta:{max:100,min:15}, proximo:{max:15,min:10}, retos:{max:10,min:5}, grandes:{max:5,min:0} },
+  '17_01_02_01_iil': { meta:{max:100,min:50}, proximo:{max:50,min:25}, retos:{max:25,min:10}, grandes:{max:10,min:0} },
   '17_18_01_02_ipc': { meta:{max:5000,min:1000}, proximo:{max:1000,min:500}, retos:{max:500,min:250}, grandes:{max:250,min:0} },
 };
 
